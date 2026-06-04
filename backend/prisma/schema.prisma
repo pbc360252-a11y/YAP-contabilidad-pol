@@ -15,7 +15,7 @@ generator client {
 // Si no está configurada, usa SQLite automáticamente.
 // ============================================================
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
