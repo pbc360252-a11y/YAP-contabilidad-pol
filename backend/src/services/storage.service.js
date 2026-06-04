@@ -9,15 +9,18 @@ const __dirname = path.dirname(__filename)
 
 dotenv.config()
 
-const isSupabaseConfigured = process.env.SUPABASE_URL && 
-    process.env.SUPABASE_URL !== 'https://tu-proyecto.supabase.co' &&
-    process.env.SUPABASE_ANON_KEY &&
-    process.env.SUPABASE_ANON_KEY !== 'tu-anon-key'
+// Backend uses the secret service key for storage operations (runs server-side only)
+const supabaseUrl = process.env.SUPABASE_URL || ''
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || ''
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://tu-proyecto.supabase.co'
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'tu-anon-key'
+const isSupabaseConfigured = supabaseUrl &&
+    supabaseUrl !== 'https://tu-proyecto.supabase.co' &&
+    supabaseKey &&
+    supabaseKey !== 'tu-anon-key'
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+export const supabase = isSupabaseConfigured
+    ? createClient(supabaseUrl, supabaseKey)
+    : null
 
 // Función auxiliar para persistencia local de archivos
 async function guardarLocalmente(nombreArchivo, fileBuffer, carpetaDestino) {
@@ -37,7 +40,7 @@ async function guardarLocalmente(nombreArchivo, fileBuffer, carpetaDestino) {
 }
 
 export async function subirPDFInformes(nombreArchivo, fileBuffer) {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabase) {
         return guardarLocalmente(nombreArchivo, fileBuffer, 'informes')
     }
 
@@ -61,7 +64,7 @@ export async function subirPDFInformes(nombreArchivo, fileBuffer) {
 }
 
 export async function subirImagenLogo(nombreArchivo, fileBuffer, contentType) {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabase) {
         return guardarLocalmente(nombreArchivo, fileBuffer, 'configuracion')
     }
 
