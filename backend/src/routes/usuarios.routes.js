@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import bcrypt from 'bcrypt'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
@@ -42,7 +42,7 @@ router.get('/', requiereRol(['superadmin', 'administrador']), async (req, res) =
 
         res.json(prevUsuarios)
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener usuarios', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener usuarios' })
     }
 })
 
@@ -92,7 +92,7 @@ router.post('/', requiereRol(['superadmin', 'administrador']), validate(usuarioS
             creadoEn: usuarioSinPass.createdAt
         })
     } catch (error) {
-        res.status(500).json({ error: 'Error al crear usuario', detail: error.message })
+        res.status(500).json({ error: 'Error al crear usuario' })
     }
 })
 
@@ -147,7 +147,7 @@ router.put('/:id', requiereRol(['superadmin', 'administrador']), validate(usuari
             estado: usuarioSinPass.estado === 'activo'
         })
     } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar usuario', detail: error.message })
+        res.status(500).json({ error: 'Error al actualizar usuario' })
     }
 })
 
@@ -176,7 +176,7 @@ router.delete('/:id', requiereRol(['superadmin']), async (req, res) => {
 
         res.json({ mensaje: 'Usuario eliminado correctamente' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar usuario', detail: error.message })
+        res.status(500).json({ error: 'Error al eliminar usuario' })
     }
 })
 
@@ -223,7 +223,7 @@ router.post('/me/foto', upload.single('foto'), async (req, res) => {
 
         res.json({ foto_url: publicUrl })
     } catch (error) {
-        res.status(500).json({ error: 'Error al subir foto de perfil', detail: error.message })
+        res.status(500).json({ error: 'Error al subir foto de perfil' })
     }
 })
 

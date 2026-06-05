@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 import { guardarExtractoHTML } from '../services/pdf.service.js'
@@ -377,7 +377,7 @@ router.post('/generar-extracto/:prestamo_id', verificarToken, requiereRol(['supe
     })
   } catch (error) {
     console.error('[Informes] Error generando extracto:', error)
-    res.status(500).json({ error: 'Falla al generar el extracto', detail: error.message })
+    res.status(500).json({ error: 'Falla al generar el extracto' })
   }
 })
 

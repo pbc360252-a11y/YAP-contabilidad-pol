@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken } from '../middleware/auth.js'
 import Decimal from 'decimal.js'
@@ -42,7 +42,7 @@ router.get('/notificaciones', verificarToken, async (req, res) => {
         })
     } catch (error) {
         console.error('Error al obtener notificaciones:', error)
-        res.status(500).json({ error: 'Error al obtener notificaciones', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener notificaciones' })
     }
 })
 
@@ -160,7 +160,7 @@ router.get('/', verificarToken, async (req, res) => {
         })
     } catch (error) {
         console.error('Error al obtener estadísticas:', error)
-        res.status(500).json({ error: 'Error al obtener estadísticas', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener estadísticas' })
     }
 })
 

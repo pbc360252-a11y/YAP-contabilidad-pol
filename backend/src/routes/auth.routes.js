@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import bcrypt from 'bcrypt'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken } from '../middleware/auth.js'
@@ -53,7 +53,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
             usuario: usuarioSinPass
         })
     } catch (error) {
-        res.status(500).json({ error: 'Error interno del servidor', detail: error.message })
+        res.status(500).json({ error: 'Error interno del servidor' })
     }
 })
 
@@ -76,7 +76,7 @@ router.post('/refresh', async (req, res) => {
             usuario: resultado.usuario
         })
     } catch (error) {
-        res.status(500).json({ error: 'Error al renovar sesión', detail: error.message })
+        res.status(500).json({ error: 'Error al renovar sesión' })
     }
 })
 
@@ -87,7 +87,7 @@ router.post('/logout', async (req, res) => {
         await revocarRefreshToken(refreshToken)
         res.json({ mensaje: 'Sesión terminada exitosamente.' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al cerrar sesión', detail: error.message })
+        res.status(500).json({ error: 'Error al cerrar sesión' })
     }
 })
 
@@ -130,7 +130,7 @@ router.post('/test-email', verificarToken, async (req, res) => {
             destino: emailDestino
         })
     } catch (error) {
-        res.status(500).json({ error: 'Error al enviar correo de prueba', detail: error.message })
+        res.status(500).json({ error: 'Error al enviar correo de prueba' })
     }
 })
 

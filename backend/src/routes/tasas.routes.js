@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 
@@ -12,7 +12,7 @@ router.get('/', verificarToken, async (req, res) => {
         })
         res.json({ tasas })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener tasas', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener tasas' })
     }
 })
 
@@ -25,7 +25,7 @@ router.get('/:id', verificarToken, async (req, res) => {
         if (!tasa) return res.status(404).json({ error: 'Tasa no encontrada' })
         res.json({ tasa })
     } catch (error) {
-        res.status(500).json({ error: 'Error interno', detail: error.message })
+        res.status(500).json({ error: 'Error interno' })
     }
 })
 
@@ -46,7 +46,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), a
         })
         res.status(201).json({ mensaje: 'Tasa creada exitosamente', tasa: nuevaTasa })
     } catch (error) {
-        res.status(500).json({ error: 'Error al crear la tasa', detail: error.message })
+        res.status(500).json({ error: 'Error al crear la tasa' })
     }
 })
 
@@ -63,7 +63,7 @@ router.put('/:id', verificarToken, requiereRol(['superadmin', 'administrador']),
         })
         res.json({ mensaje: 'Tasa actualizada exitosamente (No afecta préstamos existentes)', tasa: tasaEditada })
     } catch (error) {
-        res.status(500).json({ error: 'Error al editar tasa', detail: error.message })
+        res.status(500).json({ error: 'Error al editar tasa' })
     }
 })
 
@@ -86,7 +86,7 @@ router.delete('/:id', verificarToken, requiereRol(['superadmin']), async (req, r
         await prisma.tasaInteres.delete({ where: { id } })
         res.json({ mensaje: 'Tasa eliminada del catálogo' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar', detail: error.message })
+        res.status(500).json({ error: 'Error al eliminar' })
     }
 })
 
@@ -106,7 +106,7 @@ router.post('/reordenar', verificarToken, requiereRol(['superadmin', 'administra
         await prisma.$transaction(updates)
         res.json({ mensaje: 'Órdenes actualizadas' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al reordenar', detail: error.message })
+        res.status(500).json({ error: 'Error al reordenar' })
     }
 })
 

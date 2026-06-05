@@ -65,11 +65,14 @@ app.use(cors({
         // Permitir peticiones sin origen (como curl o Postman)
         if (!origin) return callback(null, true);
         
-        const isAllowed = allowedOrigins.includes(origin) || 
-                          origin.endsWith('.onrender.com') ||
-                          origin.startsWith('http://localhost:');
+        const isAllowedOrigin = allowedOrigins.includes(origin) || 
+                          origin.endsWith('.onrender.com')
+
+        // localhost solo permitido fuera de producción
+        const isLocalhost = process.env.NODE_ENV !== 'production' &&
+                            origin.startsWith('http://localhost:')
                           
-        if (isAllowed || (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL)) {
+        if (isAllowedOrigin || isLocalhost || (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL)) {
             callback(null, true);
         } else {
             callback(null, false);
@@ -104,10 +107,15 @@ app.use('/api/auditoria', auditoriaRoutes)
 // Inicializar Cron Jobs
 iniciarCronJobs()
 
-// Error handler
+// Error handler centralizado
+// En producción oculta los detalles internos; en desarrollo los muestra
 app.use((err, req, res, next) => {
-    console.error(err)
-    res.status(500).json({ error: 'Ha ocurrido un error en el servidor', detail: err.message })
+    console.error('[ERROR]', err)
+    const isProd = process.env.NODE_ENV === 'production'
+    res.status(err.status || 500).json({
+        error: err.message || 'Ha ocurrido un error en el servidor.',
+        ...(isProd ? {} : { detail: err.message, stack: err.stack })
+    })
 })
 
 const PORT = process.env.PORT || 3001

@@ -3,19 +3,6 @@ node_modules/
 .pnp
 .pnp.js
 
-# Testing and Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-eslint_out.json
-eslint_out_utf8.json
-frontend_error.txt
-build.log
-
 # Build outputs
 dist/
 build/
@@ -42,3 +29,41 @@ backend/prisma/*.db-journal
 # Temporary / Fallback files
 backend/temp_emails/
 backend/uploads/
+backend/scratch/
+
+# ── Archivos de depuración y pruebas ad-hoc (NO deben entrar al repo) ──────
+debug_*.js
+debug_*.log
+*.msi
+*.bak
+test_output.*
+error_screenshot.png
+
+# Logs y salidas de errores en texto plano
+backend/backend_error*.txt
+backend/backend_error*.log
+backend/err.txt
+backend/log.txt
+backend/out.txt
+backend/migration_error.txt
+backend/prisma_status.txt
+backend/debug_server*.log
+
+# Scripts de prueba ad-hoc en backend (no son la suite de tests oficial)
+backend/test_*.js
+backend/test_*.mjs
+backend/check_*.js
+backend/inspect_*.js
+backend/take_screenshot.js
+
+# Scripts temporales en raíz
+convert_eslint.cjs
+convert_eslint.js
+read_errors.cjs
+eslint_out.json
+eslint_out_utf8.json
+build.log
+frontend_error.txt
+
+# Archivos temporales de frontend
+frontend/temp_test.cjs

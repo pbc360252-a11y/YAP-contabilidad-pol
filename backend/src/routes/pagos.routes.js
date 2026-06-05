@@ -1,4 +1,4 @@
-import Decimal from 'decimal.js'
+﻿import Decimal from 'decimal.js'
 import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
@@ -371,7 +371,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
 
         res.status(201).json({ mensaje: 'Pago registrado exitosamente', pago: resultado })
     } catch (error) {
-        res.status(500).json({ error: 'Error al registrar pago', detail: error.message })
+        res.status(500).json({ error: 'Error al registrar pago' })
     }
 })
 

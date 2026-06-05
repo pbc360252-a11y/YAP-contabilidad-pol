@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 
@@ -44,7 +44,7 @@ router.get('/', verificarToken, requiereRol(['superadmin', 'administrador']), as
             totalPages: Math.ceil(total / limit)
         })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener bitácora de auditoría', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener bitácora de auditoría' })
     }
 })
 

@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 
@@ -17,7 +17,7 @@ router.get('/', verificarToken, async (req, res) => {
         })
         res.json({ tipos })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener tipos de préstamo', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener tipos de préstamo' })
     }
 })
 
@@ -36,7 +36,7 @@ router.get('/:id', verificarToken, async (req, res) => {
         if (!tipo) return res.status(404).json({ error: 'Tipo no encontrado' })
         res.json({ tipo })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener' })
     }
 })
 
@@ -63,7 +63,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), a
         })
         res.status(201).json({ mensaje: 'Tipo creado', tipo: nuevoTipo })
     } catch (error) {
-        res.status(500).json({ error: 'Error al crear', detail: error.message })
+        res.status(500).json({ error: 'Error al crear' })
     }
 })
 
@@ -104,7 +104,7 @@ router.put('/:id', verificarToken, requiereRol(['superadmin', 'administrador']),
 
         res.json({ mensaje: 'Tipo actualizado', tipo: editado })
     } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar', detail: error.message })
+        res.status(500).json({ error: 'Error al actualizar' })
     }
 })
 
@@ -127,7 +127,7 @@ router.delete('/:id', verificarToken, requiereRol(['superadmin']), async (req, r
 
         res.json({ mensaje: 'Tipo eliminado correctamente' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar', detail: error.message })
+        res.status(500).json({ error: 'Error al eliminar' })
     }
 })
 

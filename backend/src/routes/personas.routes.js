@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 import { enviarConfirmacionRegistro } from '../services/email.service.js'
@@ -142,7 +142,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
 
         res.status(201).json({ mensaje: 'Persona registrada con éxito', persona: nuevaDescifrada })
     } catch (error) {
-        res.status(500).json({ error: 'Error al crear', detail: error.message })
+        res.status(500).json({ error: 'Error al crear' })
     }
 })
 
@@ -168,7 +168,7 @@ router.put('/:id', verificarToken, requiereRol(['superadmin', 'administrador']),
 
         res.json({ mensaje: 'Información actualizada', persona: personaDescifrada })
     } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar', detail: error.message })
+        res.status(500).json({ error: 'Error al actualizar' })
     }
 })
 
@@ -195,7 +195,7 @@ router.delete('/:id', verificarToken, requiereRol(['superadmin']), async (req, r
 
         res.json({ mensaje: 'Persona eliminada' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar', detail: error.message })
+        res.status(500).json({ error: 'Error al eliminar' })
     }
 })
 
@@ -225,7 +225,7 @@ router.post('/:id/restablecer-portal', verificarToken, requiereRol(['superadmin'
 
         res.json({ mensaje: 'Acceso al portal restablecido con éxito. El PIN temporal del deudor ahora vuelve a ser su Cédula.' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al restablecer acceso del portal', detail: error.message })
+        res.status(500).json({ error: 'Error al restablecer acceso del portal' })
     }
 })
 
@@ -259,7 +259,7 @@ router.post('/:id/rechazar-solicitud', verificarToken, requiereRol(['superadmin'
 
         res.json({ mensaje: 'Solicitud de crédito descartada con éxito' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al rechazar solicitud', detail: error.message })
+        res.status(500).json({ error: 'Error al rechazar solicitud' })
     }
 })
 

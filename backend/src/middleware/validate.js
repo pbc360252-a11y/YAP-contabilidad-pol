@@ -28,7 +28,10 @@ export const validate = (schema) => (req, res, next) => {
 // ── Auth ──────────────────────────────────────────────────────
 export const loginSchema = z.object({
     correo: z.string().email('El correo no es válido.').toLowerCase().trim(),
-    password: z.string().min(4, 'La contraseña debe tener al menos 4 caracteres.')
+    password: z.string()
+        .min(8, 'La contraseña debe tener mínimo 8 caracteres.')
+        .regex(/[A-Z]/, 'Debe incluir al menos una letra mayúscula.')
+        .regex(/[0-9]/, 'Debe incluir al menos un número.')
 })
 
 // ── Solicitud pública (formulario sin login) ──────────────────
@@ -106,7 +109,11 @@ export const usuarioSchema = z.object({
     nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.').trim(),
     email: z.string().email('El correo no es válido.').toLowerCase().trim().optional(),
     correo: z.string().email('El correo no es válido.').toLowerCase().trim().optional(),
-    password: z.string().min(4, 'La contraseña debe tener al menos 4 caracteres.').optional(),
+    password: z.string()
+        .min(8, 'La contraseña debe tener mínimo 8 caracteres.')
+        .regex(/[A-Z]/, 'Debe incluir al menos una letra mayúscula.')
+        .regex(/[0-9]/, 'Debe incluir al menos un número.')
+        .optional(),
     rol: z.enum(['administrador', 'superadmin', 'analista', 'cobrador', 'operador']).optional().default('administrador'),
     estado: z.any().optional()
 })

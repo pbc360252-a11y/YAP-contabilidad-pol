@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { cifrarPersona, descifrarPersona } from '../services/crypto.service.js'
 import { enviarConfirmacionRegistro, enviarNotificacionAdminNuevaSolicitud } from '../services/email.service.js'
@@ -15,7 +15,7 @@ router.get('/empresas', async (req, res) => {
         })
         res.json({ empresas })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener empresas', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener empresas' })
     }
 })
 
@@ -125,7 +125,7 @@ router.post('/solicitar', validate(solicitudPublicaSchema), async (req, res) => 
             }
         })
     } catch (error) {
-        res.status(500).json({ error: 'Error al registrar la solicitud', detail: error.message })
+        res.status(500).json({ error: 'Error al registrar la solicitud' })
     }
 })
 

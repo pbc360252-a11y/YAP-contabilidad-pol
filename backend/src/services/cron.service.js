@@ -3,51 +3,64 @@ import { prisma } from '../lib/prisma.js'
 import { limpiarTokensExpirados } from './token.service.js'
 
 export const iniciarCronJobs = () => {
-    // Ejecutar todos los días a las 7 AM — Detección de mora
+    // ── 7 AM diario — Detección de mora (sin N+1) ───────────────────────────
     cron.schedule('0 7 * * *', async () => {
         console.log('[CRON] Ejecutando detección de mora diaria...')
         try {
             const hoy = new Date()
 
-            // CORRECCIÓN: Cuotas de préstamos activos o ya en mora (no cancelados)
+            // 1. Obtener cuotas vencidas con el prestamo_id (solo campos necesarios)
             const pendientes = await prisma.cuotaProgramada.findMany({
                 where: {
                     estado: 'pendiente',
                     fecha_programada: { lt: hoy },
                     prestamo: { estado: { in: ['activo', 'en_mora'] } }
                 },
-                include: { prestamo: true }
+                select: { id: true, prestamo_id: true, prestamo: { select: { estado: true } } }
             })
 
-            if (pendientes.length > 0) {
-                console.log(`[CRON] ${pendientes.length} cuotas vencidas encontradas. Actualizando...`)
-
-                for (const cuota of pendientes) {
-                    // Marcar cuota como vencida
-                    await prisma.cuotaProgramada.update({
-                        where: { id: cuota.id },
-                        data: { estado: 'vencida' }
-                    })
-
-                    // Pasar préstamo a en_mora SOLO si está activo
-                    if (cuota.prestamo.estado === 'activo') {
-                        await prisma.prestamo.update({
-                            where: { id: cuota.prestamo_id },
-                            data: { estado: 'en_mora' }
-                        })
-                    }
-                }
-                console.log(`[CRON] Mora actualizada para ${pendientes.length} cuotas.`)
-            } else {
+            if (pendientes.length === 0) {
                 console.log('[CRON] No se detectaron cuotas vencidas hoy.')
+                return
             }
+
+            console.log(`[CRON] ${pendientes.length} cuotas vencidas encontradas. Actualizando en lote...`)
+
+            // 2. Marcar TODAS las cuotas pendientes+vencidas en una sola query
+            await prisma.cuotaProgramada.updateMany({
+                where: {
+                    estado: 'pendiente',
+                    fecha_programada: { lt: hoy },
+                    prestamo: { estado: { in: ['activo', 'en_mora'] } }
+                },
+                data: { estado: 'vencida' }
+            })
+
+            // 3. IDs únicos de préstamos ACTIVOS que deben pasar a en_mora
+            const prestamoIdsActivos = [
+                ...new Set(
+                    pendientes
+                        .filter(c => c.prestamo.estado === 'activo')
+                        .map(c => c.prestamo_id)
+                )
+            ]
+
+            // 4. Actualizar todos esos préstamos de una sola vez
+            if (prestamoIdsActivos.length > 0) {
+                await prisma.prestamo.updateMany({
+                    where: { id: { in: prestamoIdsActivos }, estado: 'activo' },
+                    data: { estado: 'en_mora' }
+                })
+            }
+
+            console.log(`[CRON] Mora actualizada — ${pendientes.length} cuotas, ${prestamoIdsActivos.length} préstamos pasados a en_mora.`)
 
         } catch (error) {
             console.error('[CRON] Error detectando mora:', error)
         }
     })
 
-    // Recordatorios quincenales días 14 y 28 a las 8 AM
+    // ── Días 14 y 28 a las 8 AM — Recordatorios quincenales ────────────────
     cron.schedule('0 8 14,28 * *', async () => {
         console.log('[CRON] Ejecutando revisión de cuotas próximas a vencer...')
         try {
@@ -55,7 +68,6 @@ export const iniciarCronJobs = () => {
             const en7Dias = new Date(hoy)
             en7Dias.setDate(hoy.getDate() + 7)
 
-            // Cuotas que vencen en los próximos 7 días
             const proximasAVencer = await prisma.cuotaProgramada.findMany({
                 where: {
                     estado: 'pendiente',
@@ -71,38 +83,36 @@ export const iniciarCronJobs = () => {
         }
     })
 
-    // Verificación diaria a medianoche: limpiar préstamos en_mora que ya fueron pagados
+    // ── Medianoche diaria — Corregir préstamos en_mora sin cuotas vencidas ──
     cron.schedule('0 0 * * *', async () => {
         console.log('[CRON] Verificando consistencia de estados de préstamos...')
         try {
-            // Préstamos marcados como en_mora pero sin cuotas vencidas reales
-            const enMoraConCuotasAlDia = await prisma.prestamo.findMany({
-                where: { estado: 'en_mora' },
-                include: {
-                    cuotas: { where: { estado: 'vencida' } }
-                }
+            // Obtener IDs de préstamos en_mora que SÍ tienen cuotas vencidas reales
+            const conCuotasVencidas = await prisma.cuotaProgramada.findMany({
+                where: { estado: 'vencida', prestamo: { estado: 'en_mora' } },
+                select: { prestamo_id: true },
+                distinct: ['prestamo_id']
+            })
+            const idsConMoraReal = conCuotasVencidas.map(c => c.prestamo_id)
+
+            // Pasar a activo todos los en_mora que NO tienen cuotas vencidas
+            const resultado = await prisma.prestamo.updateMany({
+                where: {
+                    estado: 'en_mora',
+                    id: { notIn: idsConMoraReal }
+                },
+                data: { estado: 'activo' }
             })
 
-            let corregidos = 0
-            for (const p of enMoraConCuotasAlDia) {
-                if (p.cuotas.length === 0) {
-                    await prisma.prestamo.update({
-                        where: { id: p.id },
-                        data: { estado: 'activo' }
-                    })
-                    corregidos++
-                }
-            }
-
-            if (corregidos > 0) {
-                console.log(`[CRON] ${corregidos} préstamos corregidos de en_mora a activo.`)
+            if (resultado.count > 0) {
+                console.log(`[CRON] ${resultado.count} préstamos corregidos de en_mora a activo.`)
             }
         } catch (err) {
             console.error('[CRON] Error en verificación de consistencia:', err)
         }
     })
 
-    // ── NUEVO: Limpieza de Refresh Tokens expirados (diario a las 3 AM) ────────
+    // ── 3 AM diaria — Limpieza de Refresh Tokens expirados ─────────────────
     cron.schedule('0 3 * * *', async () => {
         try {
             const eliminados = await limpiarTokensExpirados()

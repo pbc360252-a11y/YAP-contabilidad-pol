@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 import { calcularPrestamo, validarTasaUsura } from '../services/financiero.service.js'
@@ -55,7 +55,7 @@ router.get('/todos/detallados', verificarToken, async (req, res) => {
         })
         res.json({ prestamos: prestamos.map(addCodigo) })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener préstamos detallados', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener préstamos detallados' })
     }
 })
 
@@ -75,7 +75,7 @@ router.get('/:id', verificarToken, async (req, res) => {
         if (!prestamo) return res.status(404).json({ error: 'Préstamo no encontrado' })
         res.json({ prestamo: addCodigo(prestamo) })
     } catch (error) {
-        res.status(500).json({ error: 'Error interno', detail: error.message })
+        res.status(500).json({ error: 'Error interno' })
     }
 })
 
@@ -110,7 +110,7 @@ router.post('/simular', verificarToken, async (req, res) => {
 
         res.json({ calculo })
     } catch (error) {
-        res.status(400).json({ error: 'Error en simulación', detail: error.message })
+        res.status(400).json({ error: 'Error en simulación' })
     }
 })
 
@@ -242,7 +242,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
         if (error.message && error.message.includes('ya tiene 2 préstamos activos')) {
             return res.status(400).json({ error: error.message })
         }
-        res.status(500).json({ error: 'Error al registrar préstamo', detail: error.message })
+        res.status(500).json({ error: 'Error al registrar préstamo' })
     }
 })
 
@@ -322,7 +322,7 @@ router.delete('/:id', verificarToken, requiereRol(['superadmin']), async (req, r
 
         res.json({ mensaje: 'Préstamo eliminado de la base de datos' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar', detail: error.message })
+        res.status(500).json({ error: 'Error al eliminar' })
     }
 })
 

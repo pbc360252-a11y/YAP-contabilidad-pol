@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 
@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
         configList.forEach(c => configs[c.clave] = c.valor)
         res.json({ configuraciones: configs })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener configuraciones', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener configuraciones' })
     }
 })
 
@@ -30,7 +30,7 @@ router.put('/', verificarToken, requiereRol(['superadmin']), async (req, res) =>
 
         res.json({ mensaje: 'Configuraciones actualizadas.' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar', detail: error.message })
+        res.status(500).json({ error: 'Error al actualizar' })
     }
 })
 
@@ -55,7 +55,7 @@ router.post('/logo', verificarToken, requiereRol(['superadmin']), upload.single(
 
         res.json({ mensaje: 'Logo actualizado con éxito', url: publicUrl })
     } catch (error) {
-        res.status(500).json({ error: 'Error al subir logo', detail: error.message })
+        res.status(500).json({ error: 'Error al subir logo' })
     }
 })
 

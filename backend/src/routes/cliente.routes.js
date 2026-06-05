@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../lib/prisma.js'
@@ -85,7 +85,7 @@ router.post('/auth/login', async (req, res) => {
         })
 
     } catch (error) {
-        res.status(500).json({ error: 'Error interno en el servidor', detail: error.message })
+        res.status(500).json({ error: 'Error interno en el servidor' })
     }
 })
 
@@ -116,7 +116,7 @@ router.post('/perfil/cambiar-pin', verificarTokenCliente, async (req, res) => {
 
         res.json({ mensaje: 'Tu PIN de seguridad se ha configurado exitosamente.' })
     } catch (error) {
-        res.status(500).json({ error: 'Error al cambiar PIN de seguridad', detail: error.message })
+        res.status(500).json({ error: 'Error al cambiar PIN de seguridad' })
     }
 })
 
@@ -210,7 +210,7 @@ router.get('/dashboard', verificarTokenCliente, async (req, res) => {
         })
 
     } catch (error) {
-        res.status(500).json({ error: 'Error al compilar el Dashboard de cliente', detail: error.message })
+        res.status(500).json({ error: 'Error al compilar el Dashboard de cliente' })
     }
 })
 
@@ -233,7 +233,7 @@ router.get('/prestamos', verificarTokenCliente, async (req, res) => {
 
         res.json({ prestamos })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener los préstamos del cliente', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener los préstamos del cliente' })
     }
 })
 
@@ -258,7 +258,7 @@ router.get('/pagos', verificarTokenCliente, async (req, res) => {
 
         res.json({ pagos })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener el historial de pagos', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener el historial de pagos' })
     }
 })
 

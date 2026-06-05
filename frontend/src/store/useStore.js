@@ -32,11 +32,8 @@ export const useStore = create((set) => ({
     // UI state
     sidebarAbierta: true,
     vistaPremium: true, // true = Premium (dark/glass), false = Standard (corporate/clean)
-    notificaciones: [
-        { id: 1, text: "Nueva solicitud de préstamo de Juan Perez", time: "5 min", type: "info" },
-        { id: 2, text: "Cuota vencida: Maria Lopez (CC: 1020...)", time: "1h", type: "alert" }
-    ],
-    atencionPendiente: 3,
+    notificaciones: [],   // Se cargan desde el backend al iniciar sesión
+    atencionPendiente: 0,
 
     toggleSidebar: () => set((state) => ({ sidebarAbierta: !state.sidebarAbierta })),
     setVistaPremium: (valor) => set({ vistaPremium: valor }),

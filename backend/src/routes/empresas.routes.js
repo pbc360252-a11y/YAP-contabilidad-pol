@@ -1,4 +1,4 @@
-import { Router } from 'express'
+﻿import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 import { validate, empresaSchema } from '../middleware/validate.js'
@@ -14,7 +14,7 @@ router.get('/', verificarToken, async (req, res) => {
         })
         res.json({ empresas })
     } catch (error) {
-        res.status(500).json({ error: 'Error al obtener empresas', detail: error.message })
+        res.status(500).json({ error: 'Error al obtener empresas' })
     }
 })
 
@@ -40,7 +40,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
         })
         res.status(201).json({ mensaje: 'Empresa creada con éxito', empresa: nueva })
     } catch (error) {
-        res.status(500).json({ error: 'Error al crear empresa', detail: error.message })
+        res.status(500).json({ error: 'Error al crear empresa' })
     }
 })
 
