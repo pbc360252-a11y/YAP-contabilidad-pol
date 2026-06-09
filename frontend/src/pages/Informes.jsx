@@ -6,6 +6,7 @@ import { QuickPrint } from '../components/ui/QuickPrint'
 import { GenericReportPDF } from '../components/ui/GenericReportPDF'
 import { formatFechaCorta } from '../utils/formatFecha'
 import { exportToExcel } from '../utils/exportExcel'
+import toast from 'react-hot-toast'
 
 export function Informes() {
     const [prestamos, setPrestamos] = useState([])
@@ -56,7 +57,7 @@ export function Informes() {
                     ventana.document.write(htmlContent)
                     ventana.document.close()
                 } else {
-                    alert('⚠️ El navegador bloqueó la apertura de la ventana. Permite pop-ups para este sitio.')
+                    toast.error('⚠️ El navegador bloqueó la apertura de la ventana. Permite pop-ups para este sitio.')
                 }
             } else if (url) {
                 window.open(url, '_blank')
@@ -66,9 +67,16 @@ export function Informes() {
             const msgCorreo = correo === 'Enviado al cliente'
                 ? '✅ Correo enviado al cliente'
                 : correo?.includes('Sin correo') ? '⚠️ El cliente no tiene correo registrado' : `📋 ${correo}`
-            console.log('[Informes]', msgCorreo)
+            if (import.meta.env.DEV) console.log('[Informes]', msgCorreo)
+            if (msgCorreo.startsWith('✅')) {
+                toast.success(msgCorreo.replace('✅ ', ''))
+            } else if (msgCorreo.startsWith('⚠️')) {
+                toast(msgCorreo.replace('⚠️ ', ''), { icon: '⚠️' })
+            } else {
+                toast(msgCorreo)
+            }
         } catch (e) {
-            alert('Error generando extracto: ' + (e.response?.data?.error || e.message))
+            toast.error('Error generando extracto: ' + (e.response?.data?.error || e.message))
         } finally {
             setLoading(false)
         }

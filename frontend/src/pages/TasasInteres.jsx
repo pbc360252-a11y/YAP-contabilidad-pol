@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, GripVertical, Save, Trash2 } from 'lucide-react'
 import api from '../utils/api'
+import toast from 'react-hot-toast'
 
 export function TasasInteres() {
     const [tasas, setTasas] = useState([])
@@ -61,17 +62,19 @@ export function TasasInteres() {
             setTasaEditar(null)
             cargar()
         } catch (e) {
-            alert(e.response?.data?.error || 'Error al guardar')
+            toast.error(e.response?.data?.error || 'Error al guardar')
         }
     }
 
+    const [confirmEliminarId, setConfirmEliminarId] = useState(null)
+
     const deleteTasa = async (id) => {
-        if (!window.confirm('¿Está seguro de que desea eliminar esta tasa?')) return
         try {
             await api.delete(`/tasas/${id}`)
+            setConfirmEliminarId(null)
             cargar()
         } catch (e) {
-            alert(e.response?.data?.error || 'Error al eliminar')
+            toast.error(e.response?.data?.error || 'Error al eliminar')
         }
     }
 
@@ -129,7 +132,7 @@ export function TasasInteres() {
                                             <button onClick={() => { setTasaEditar(t); setModalOpen(true); }} className="p-2 text-[var(--texto-3)] hover:text-[#4FD1C5] hover:bg-[rgba(79,209,197,0.1)] rounded-lg transition-colors">
                                                 <Save size={18} />
                                             </button>
-                                            <button onClick={() => deleteTasa(t.id)} className="p-2 text-[var(--texto-3)] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] rounded-lg transition-colors">
+                                            <button onClick={() => setConfirmEliminarId(t.id)} className="p-2 text-[var(--texto-3)] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] rounded-lg transition-colors">
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>
@@ -146,6 +149,22 @@ export function TasasInteres() {
                     onClose={() => setModalOpen(false)}
                     onSave={saveTasa}
                 />
+            )}
+
+            {confirmEliminarId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[var(--fondo-card)] border border-[var(--borde)] rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+                        <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+                            <Trash2 size={24} className="text-red-500" />
+                        </div>
+                        <h3 className="text-white font-bold text-lg text-center mb-2">¿Eliminar tasa?</h3>
+                        <p className="text-[var(--texto-3)] text-sm text-center mb-6">Esta acción no se puede deshacer.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setConfirmEliminarId(null)} className="flex-1 py-2.5 border border-[var(--borde)] text-[var(--texto-3)] hover:text-white rounded-xl font-bold transition-all">Cancelar</button>
+                            <button onClick={() => deleteTasa(confirmEliminarId)} className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )

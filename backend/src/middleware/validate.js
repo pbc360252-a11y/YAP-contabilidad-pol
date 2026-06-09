@@ -84,11 +84,28 @@ export const prestamoCrearSchema = z.object({
     monto: z.coerce.number().min(100000, 'El monto mínimo es $100.000 COP.'),
     cuotas: z.coerce.number().int().min(1, 'El número de cuotas debe ser mayor a 0.').max(120),
     fechaPrimerPago: z.string().min(1, 'La fecha del primer pago es obligatoria.'),
-    tasasPersonalizadas: z.array(z.any()).optional().default([]),
+    tasasPersonalizadas: z.array(z.object({
+        id: z.string().optional(),
+        nombre: z.string().max(200).optional(),
+        nombre_snapshot: z.string().max(200).optional(),
+        tipo_calculo: z.enum(['porcentaje_periodico', 'porcentaje_mensual', 'porcentaje_anual', 'monto_fijo', 'porcentaje_simple']).optional(),
+        tipo_calculo_snapshot: z.enum(['porcentaje_periodico', 'porcentaje_mensual', 'porcentaje_anual', 'monto_fijo', 'porcentaje_simple']).optional(),
+        valor_snapshot: z.union([z.number().min(0), z.string()]).optional(),
+        valor_porcentaje: z.coerce.number().min(0).max(10000).optional(),
+        valor_fijo: z.coerce.number().min(0).optional(),
+        aplica_sobre: z.string().optional(),
+        aplica_sobre_snapshot: z.string().optional(),
+        es_cargo_unico: z.boolean().optional(),
+        es_tasa_mora: z.boolean().optional(),
+        activa: z.boolean().optional(),
+        es_adhoc: z.boolean().optional(),
+        guardado: z.boolean().optional(),
+    }).passthrough()).optional().default([]),
     metodo_amortizacion: z.string().optional().default('lineal'),
     diferir_cargos: z.boolean().optional().default(true),
     observaciones: z.string().trim().optional().default('')
 })
+
 
 
 // ── Empresas ──────────────────────────────────────────────────

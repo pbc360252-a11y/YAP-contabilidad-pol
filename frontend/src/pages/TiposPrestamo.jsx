@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Layers, Plus, X, Pencil, Trash2, Printer } from 'lucide-react'
 import api from '../utils/api'
+import toast from 'react-hot-toast'
 import { QuickPrint } from '../components/ui/QuickPrint'
 import { GenericReportPDF } from '../components/ui/GenericReportPDF'
 
@@ -71,19 +72,21 @@ export function TiposPrestamo() {
             setModalOpen(false)
             cargar()
         } catch (err) {
-            alert(err.response?.data?.error || 'Error al guardar tipo de préstamo')
+            toast.error(err.response?.data?.error || 'Error al guardar tipo de préstamo')
         } finally {
             setGuardando(false)
         }
     }
 
+    const [confirmEliminarId, setConfirmEliminarId] = useState(null)
+
     const eliminar = async (id) => {
-        if (!window.confirm('¿Eliminar esta tipología? Solo si no hay préstamos activos de este tipo.')) return
         try {
             await api.delete(`/tipos-prestamo/${id}`)
+            setConfirmEliminarId(null)
             cargar()
         } catch (e) {
-            alert(e.response?.data?.error || 'Error al eliminar')
+            toast.error(e.response?.data?.error || 'Error al eliminar')
         }
     }
 
@@ -149,7 +152,7 @@ export function TiposPrestamo() {
                                     <button onClick={() => abrirModal(t)} className="p-1.5 text-[var(--texto-3)] hover:text-[#4FD1C5] hover:bg-[rgba(79,209,197,0.1)] rounded-lg transition-colors">
                                         <Pencil size={15} />
                                     </button>
-                                    <button onClick={() => eliminar(t.id)} className="p-1.5 text-[var(--texto-3)] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] rounded-lg transition-colors">
+                                    <button onClick={() => setConfirmEliminarId(t.id)} className="p-1.5 text-[var(--texto-3)] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] rounded-lg transition-colors">
                                         <Trash2 size={15} />
                                     </button>
                                 </div>
@@ -250,6 +253,21 @@ export function TiposPrestamo() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {confirmEliminarId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[var(--fondo-base)] border border-[var(--borde)] rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+                        <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+                            <Trash2 size={24} className="text-red-500" />
+                        </div>
+                        <h3 className="text-white font-bold text-lg text-center mb-2">¿Eliminar tipología?</h3>
+                        <p className="text-[var(--texto-3)] text-sm text-center mb-6">Solo si no hay préstamos activos de este tipo. Esta acción no se puede deshacer.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setConfirmEliminarId(null)} className="flex-1 py-2.5 border border-[var(--borde)] text-[var(--texto-3)] hover:text-white rounded-xl font-bold transition-all">Cancelar</button>
+                            <button onClick={() => eliminar(confirmEliminarId)} className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all">Eliminar</button>
+                        </div>
                     </div>
                 </div>
             )}

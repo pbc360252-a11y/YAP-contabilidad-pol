@@ -42,7 +42,7 @@ export function Prestamos() {
             }, 500)
         } catch (e) {
             console.error(e)
-            alert("Error al cargar el contrato para imprimir")
+            toast.error("Error al cargar el contrato para imprimir")
         }
     }
 
@@ -53,7 +53,7 @@ export function Prestamos() {
             setDetalleOpen(true)
         } catch (e) {
             console.error(e)
-            alert("Error al cargar detalle")
+            toast.error("Error al cargar detalle")
         }
     }
 

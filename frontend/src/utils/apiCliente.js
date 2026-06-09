@@ -31,7 +31,7 @@ const wrapMockResponse = (response) => {
 const originalGet = apiCliente.get
 apiCliente.get = async function (url, config) {
     if (isOffline()) {
-        console.log(`[Offline Client GET] ${url}`)
+        if (import.meta.env.DEV) console.log(`[Offline Client GET] ${url}`)
         const db = await getMockDb()
         return wrapMockResponse(handleOfflineClientRequest('GET', url, undefined, db))
     }
@@ -39,7 +39,7 @@ apiCliente.get = async function (url, config) {
         return await originalGet.apply(this, arguments)
     } catch (err) {
         if (!err.response) { // Servidor apagado
-            console.warn(`[Error de Servidor - Activando Modo Offline] Client GET ${url}`)
+            if (import.meta.env.DEV) console.warn(`[Error de Servidor - Activando Modo Offline] Client GET ${url}`)
             localStorage.setItem('yap_offline_mode', 'true')
             const db = await getMockDb()
             return wrapMockResponse(handleOfflineClientRequest('GET', url, undefined, db))
@@ -51,7 +51,7 @@ apiCliente.get = async function (url, config) {
 const originalPost = apiCliente.post
 apiCliente.post = async function (url, data, config) {
     if (isOffline()) {
-        console.log(`[Offline Client POST] ${url}`, data)
+        if (import.meta.env.DEV) console.log(`[Offline Client POST] ${url}`, data)
         const db = await getMockDb()
         return wrapMockResponse(handleOfflineClientRequest('POST', url, data, db))
     }
@@ -59,7 +59,7 @@ apiCliente.post = async function (url, data, config) {
         return await originalPost.apply(this, arguments)
     } catch (err) {
         if (!err.response) {
-            console.warn(`[Error de Servidor - Activando Modo Offline] Client POST ${url}`)
+            if (import.meta.env.DEV) console.warn(`[Error de Servidor - Activando Modo Offline] Client POST ${url}`)
             localStorage.setItem('yap_offline_mode', 'true')
             const db = await getMockDb()
             return wrapMockResponse(handleOfflineClientRequest('POST', url, data, db))

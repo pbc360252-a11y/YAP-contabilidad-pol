@@ -118,15 +118,19 @@ export function Personas() {
         return () => clearTimeout(timer)
     }, [busqueda, filtroEmpresa])
 
+    const [confirmDesactivarId, setConfirmDesactivarId] = useState(null)
+
     const desactivar = async (id) => {
-        if (!window.confirm('¿Seguro que desea eliminar/desactivar a esta persona?')) return
         try {
             await api.delete(`/personas/${id}`)
+            setConfirmDesactivarId(null)
+            toast.success('Cliente eliminado/desactivado correctamente')
             cargarPersonas(busqueda)
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al eliminar')
+            toast.error(error.response?.data?.error || 'Error al eliminar')
         }
     }
+
 
     const verPerfil = async (p) => {
         setPerfilPersona(p)
@@ -373,9 +377,10 @@ export function Personas() {
                                                     className="p-1.5 text-[var(--texto-3)] hover:text-[#4FD1C5] hover:bg-[rgba(79,209,197,0.1)] rounded-lg transition-colors" title="Editar">
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => desactivar(p.id)} className="p-1.5 text-[var(--texto-3)] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] rounded-lg transition-colors" title="Eliminar">
+                                                <button onClick={() => setConfirmDesactivarId(p.id)} className="p-1.5 text-[var(--texto-3)] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] rounded-lg transition-colors" title="Eliminar">
                                                     <Trash2 size={16} />
                                                 </button>
+
                                             </td>
                                         </tr>
                                     ))
@@ -430,9 +435,25 @@ export function Personas() {
                 />
             )}
 
+            {confirmDesactivarId && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[var(--fondo-base)] border border-[var(--borde)] rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+                        <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+                            <Trash2 size={24} className="text-red-500" />
+                        </div>
+                        <h3 className="text-white font-bold text-lg text-center mb-2">¿Desactivar cliente?</h3>
+                        <p className="text-[var(--texto-3)] text-sm text-center mb-6">Esta acción no se puede deshacer y puede afectar sus créditos activos.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setConfirmDesactivarId(null)} className="flex-1 py-2.5 border border-[var(--borde)] text-[var(--texto-3)] hover:text-white rounded-xl font-bold transition-all">Cancelar</button>
+                            <button onClick={() => desactivar(confirmDesactivarId)} className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }
+
 
 function ModalPerfil({ persona, onClose, onPrintAmortizacion }) {
     const [prestamos, setPrestamos] = useState([])
@@ -445,16 +466,19 @@ function ModalPerfil({ persona, onClose, onPrintAmortizacion }) {
             .finally(() => setLoading(false))
     }, [persona.id])
 
+    const [showConfirmPin, setShowConfirmPin] = useState(false)
+
     const handleRestablecerPin = async () => {
-        if (!window.confirm('¿Seguro que deseas restablecer el acceso al portal de este cliente? El PIN temporal volverá a ser su Cédula.')) return
         try {
             await api.post(`/personas/${persona.id}/restablecer-portal`)
+            setShowConfirmPin(false)
             toast.success('¡Acceso al portal del cliente restablecido con éxito!')
         } catch (error) {
             console.error(error)
             toast.error('Error al restablecer acceso del portal.')
         }
     }
+
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(6,12,26,0.85)] backdrop-blur-md p-4 animate-fade-in overflow-y-auto">
@@ -497,13 +521,14 @@ function ModalPerfil({ persona, onClose, onPrintAmortizacion }) {
                         <p className="text-white font-bold">{prestamos.length}</p>
                     </div>
                     <div 
-                        onClick={handleRestablecerPin}
+                        onClick={() => setShowConfirmPin(true)}
                         className="bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/10 rounded-xl p-3 cursor-pointer select-none transition-all flex flex-col justify-center active:scale-[0.97]"
                         title="Restablecer acceso de portal del cliente"
                     >
                         <p className="text-amber-400 text-[10px] font-black uppercase tracking-widest mb-0.5">Portal de Clientes</p>
                         <p className="text-[9px] font-bold text-slate-400 uppercase">Restablecer PIN de acceso</p>
                     </div>
+
                 </div>
                 {persona.observaciones && (
                     <div className="bg-white/5 rounded-xl p-3 mb-4">
@@ -544,9 +569,22 @@ function ModalPerfil({ persona, onClose, onPrintAmortizacion }) {
                         ))}
                     </div>
                 )}
+                {showConfirmPin && (
+                    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                        <div className="bg-[var(--fondo-card)] border border-[var(--borde)] rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl text-center relative animate-fade-in">
+                            <h3 className="text-white font-bold text-lg mb-2">Restablecer acceso</h3>
+                            <p className="text-[var(--texto-3)] text-sm mb-6">¿Seguro que deseas restablecer el acceso al portal de este cliente? El PIN temporal volverá a ser su Cédula.</p>
+                            <div className="flex gap-3">
+                                <button type="button" onClick={() => setShowConfirmPin(false)} className="flex-1 py-3 border border-[var(--borde)] text-[var(--texto-3)] hover:text-white rounded-xl font-bold transition-all text-sm">Cancelar</button>
+                                <button type="button" onClick={handleRestablecerPin} className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl font-bold transition-all shadow-lg text-sm">Restablecer</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
 }
+
 
 

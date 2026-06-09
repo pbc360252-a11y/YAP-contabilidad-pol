@@ -60,7 +60,7 @@ api.get = async function (url, config) {
     // Las rutas públicas NUNCA deben ir al modo offline
     const isPublicRoute = url.startsWith('/publico') || url.startsWith('publico')
     if (isOffline() && !isPublicRoute) {
-        console.log(`[Offline GET] ${url}`)
+        if (import.meta.env.DEV) console.log(`[Offline GET] ${url}`)
         const db = await getMockDb()
         return wrapMockResponse(handleOfflineRequest('GET', url, undefined, db))
     }
@@ -68,7 +68,7 @@ api.get = async function (url, config) {
         return await originalGet.apply(this, arguments)
     } catch (err) {
         if (!isPublicRoute && shouldTriggerOffline(err)) {
-            console.warn(`[Error de Servidor - Activando Modo Offline] GET ${url}`)
+            if (import.meta.env.DEV) console.warn(`[Error de Servidor - Activando Modo Offline] GET ${url}`)
             enableOfflineMode()
             const db = await getMockDb()
             return wrapMockResponse(handleOfflineRequest('GET', url, undefined, db))
@@ -81,7 +81,7 @@ const originalPost = api.post
 api.post = async function (url, data, config) {
     const isPublicRoute = url.startsWith('/publico') || url.startsWith('publico')
     if (isOffline() && !isPublicRoute) {
-        console.log(`[Offline POST] ${url}`, data)
+        if (import.meta.env.DEV) console.log(`[Offline POST] ${url}`, data)
         const db = await getMockDb()
         return wrapMockResponse(handleOfflineRequest('POST', url, data, db))
     }
@@ -89,7 +89,7 @@ api.post = async function (url, data, config) {
         return await originalPost.apply(this, arguments)
     } catch (err) {
         if (!isPublicRoute && shouldTriggerOffline(err)) {
-            console.warn(`[Error de Servidor - Activando Modo Offline] POST ${url}`)
+            if (import.meta.env.DEV) console.warn(`[Error de Servidor - Activando Modo Offline] POST ${url}`)
             enableOfflineMode()
             const db = await getMockDb()
             return wrapMockResponse(handleOfflineRequest('POST', url, data, db))
@@ -101,7 +101,7 @@ api.post = async function (url, data, config) {
 const originalPut = api.put
 api.put = async function (url, data, config) {
     if (isOffline()) {
-        console.log(`[Offline PUT] ${url}`, data)
+        if (import.meta.env.DEV) console.log(`[Offline PUT] ${url}`, data)
         const db = await getMockDb()
         return wrapMockResponse(handleOfflineRequest('PUT', url, data, db))
     }
@@ -109,7 +109,7 @@ api.put = async function (url, data, config) {
         return await originalPut.apply(this, arguments)
     } catch (err) {
         if (shouldTriggerOffline(err)) {
-            console.warn(`[Error de Servidor - Activando Modo Offline] PUT ${url}`)
+            if (import.meta.env.DEV) console.warn(`[Error de Servidor - Activando Modo Offline] PUT ${url}`)
             enableOfflineMode()
             const db = await getMockDb()
             return wrapMockResponse(handleOfflineRequest('PUT', url, data, db))
@@ -121,7 +121,7 @@ api.put = async function (url, data, config) {
 const originalDelete = api.delete
 api.delete = async function (url, config) {
     if (isOffline()) {
-        console.log(`[Offline DELETE] ${url}`)
+        if (import.meta.env.DEV) console.log(`[Offline DELETE] ${url}`)
         const db = await getMockDb()
         return wrapMockResponse(handleOfflineRequest('DELETE', url, undefined, db))
     }
@@ -129,7 +129,7 @@ api.delete = async function (url, config) {
         return await originalDelete.apply(this, arguments)
     } catch (err) {
         if (shouldTriggerOffline(err)) {
-            console.warn(`[Error de Servidor - Activando Modo Offline] DELETE ${url}`)
+            if (import.meta.env.DEV) console.warn(`[Error de Servidor - Activando Modo Offline] DELETE ${url}`)
             enableOfflineMode()
             const db = await getMockDb()
             return wrapMockResponse(handleOfflineRequest('DELETE', url, undefined, db))

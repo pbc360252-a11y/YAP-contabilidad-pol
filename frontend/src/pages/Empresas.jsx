@@ -68,10 +68,12 @@ export function Empresas() {
         }
     }
 
+    const [confirmEliminarId, setConfirmEliminarId] = useState(null)
+
     const eliminar = async (id) => {
-        if (!window.confirm('¿Eliminar empresa? Solo si no tiene personas asociadas.')) return
         try {
             await api.delete(`/empresas/${id}`)
+            setConfirmEliminarId(null)
             cargar()
             toast.success('Empresa eliminada')
         } catch (e) {
@@ -121,7 +123,7 @@ export function Empresas() {
                                     <button onClick={() => abrirModal(emp)} className="p-1.5 text-[var(--texto-3)] hover:text-[#4FD1C5] hover:bg-[rgba(79,209,197,0.1)] rounded-lg transition-colors">
                                         <Pencil size={15} />
                                     </button>
-                                    <button onClick={() => eliminar(emp.id)} className="p-1.5 text-[var(--texto-3)] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] rounded-lg transition-colors">
+                                    <button onClick={() => setConfirmEliminarId(emp.id)} className="p-1.5 text-[var(--texto-3)] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] rounded-lg transition-colors">
                                         <Trash2 size={15} />
                                     </button>
                                 </div>
@@ -161,6 +163,22 @@ export function Empresas() {
                 </div>
             )}
 
+            {confirmEliminarId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[var(--fondo-base)] border border-[var(--borde)] rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+                        <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+                            <Trash2 size={24} className="text-red-500" />
+                        </div>
+                        <h3 className="text-white font-bold text-lg text-center mb-2">¿Eliminar empresa?</h3>
+                        <p className="text-[var(--texto-3)] text-sm text-center mb-6">Solo si no tiene personas asociadas. Esta acción no se puede deshacer.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setConfirmEliminarId(null)} className="flex-1 py-2.5 border border-[var(--borde)] text-[var(--texto-3)] hover:text-white rounded-xl font-bold transition-all">Cancelar</button>
+                            <button onClick={() => eliminar(confirmEliminarId)} className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Componente Invisible para PDF - Offscreen para permitir renderizado */}
             <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', opacity: 0, pointerEvents: 'none' }}>
                 <EmpresaEmpleadosPDF ref={printRef} empresa={empresaImprimir} empleados={empleadosImprimir} />
@@ -168,3 +186,4 @@ export function Empresas() {
         </div>
     )
 }
+

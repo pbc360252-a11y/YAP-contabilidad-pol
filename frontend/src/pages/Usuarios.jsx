@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import toast from 'react-hot-toast'
 import api from '../utils/api'
 import {
     Users, UserPlus, Search, ChevronLeft, ChevronRight,
@@ -363,9 +364,10 @@ export function Usuarios() {
             })
 
             setUsuarios(prev => prev.map(u => u.id === id ? data : u))
+            toast.success('Estado del usuario actualizado')
         } catch (error) {
             console.error('Error al cambiar de estado:', error)
-            alert(error.response?.data?.error || 'Error al cambiar estado')
+            toast.error(error.response?.data?.error || 'Error al cambiar estado')
         }
     }
 
@@ -380,12 +382,13 @@ export function Usuarios() {
                 const { data: usuarioNuevo } = await api.post('/usuarios', data)
                 setUsuarios(prev => [usuarioNuevo, ...prev])
             }
+            toast.success(data.id ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente')
             setModalCrear(false)
             setUsuarioEditar(null)
             setPagina(1)
         } catch (error) {
             console.error('Error guardando usuario:', error)
-            alert(error.response?.data?.error || 'Error al guardar el usuario')
+            toast.error(error.response?.data?.error || 'Error al guardar el usuario')
         }
     }
 
@@ -395,9 +398,10 @@ export function Usuarios() {
             await api.delete(`/usuarios/${usuarioEliminar.id}`)
             setUsuarios(prev => prev.filter(u => u.id !== usuarioEliminar.id))
             setUsuarioEliminar(null)
+            toast.success('Usuario eliminado correctamente')
         } catch (error) {
             console.error('Error eliminando usuario:', error)
-            alert(error.response?.data?.error || 'Error al eliminar el usuario')
+            toast.error(error.response?.data?.error || 'Error al eliminar el usuario')
         }
     }
 

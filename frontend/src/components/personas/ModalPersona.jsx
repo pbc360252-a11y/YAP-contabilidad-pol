@@ -25,6 +25,8 @@ export function ModalPersona({ persona, onClose, onNewLoan }) {
     })
     const [esEmpresaManual, setEsEmpresaManual] = useState(false)
 
+    const [createdPersona, setCreatedPersona] = useState(null)
+
     useEffect(() => {
         api.get('/empresas')
             .then(res => setEmpresas(res.data.empresas || []))
@@ -72,12 +74,7 @@ export function ModalPersona({ persona, onClose, onNewLoan }) {
             } else {
                 const resPers = await api.post('/personas', prunedPayload)
                 const newPersona = resPers.data.persona
-                if (window.confirm('Persona creada exitosamente. ¿Desea continuar con el préstamo para ' + newPersona.primer_nombre + '?')) {
-                    onClose(newPersona.id)
-                    if (onNewLoan) onNewLoan(newPersona.id)
-                } else {
-                    onClose(newPersona.id)
-                }
+                setCreatedPersona(newPersona)
             }
         } catch (error) {
             console.error(error)
@@ -90,6 +87,28 @@ export function ModalPersona({ persona, onClose, onNewLoan }) {
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(6,12,26,0.85)] backdrop-blur-md p-4 animate-fade-in overflow-y-auto">
             {loading && <Loader overlay message="Guardando Persona..." />}
+            
+            {createdPersona && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[var(--fondo-card)] border border-[var(--borde)] rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl text-center relative">
+                        <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4 text-emerald-500">
+                            ✓
+                        </div>
+                        <h3 className="text-white font-bold text-xl mb-2">Persona creada exitosamente</h3>
+                        <p className="text-[var(--texto-3)] text-sm mb-6">¿Desea continuar con el préstamo para <strong className="text-white">{createdPersona.primer_nombre} {createdPersona.primer_apellido}</strong>?</p>
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => {
+                                onClose(createdPersona.id)
+                            }} className="flex-1 py-3 border border-[var(--borde)] text-[var(--texto-3)] hover:text-white rounded-xl font-bold transition-all text-sm uppercase tracking-wider">No, salir</button>
+                            <button type="button" onClick={() => {
+                                onClose(createdPersona.id)
+                                if (onNewLoan) onNewLoan(createdPersona.id)
+                            }} className="flex-1 py-3 bg-gradient-to-r from-[#4FD1C5] to-[#38B2AC] hover:from-[#38B2AC] hover:to-[#2C7A7B] text-white rounded-xl font-bold transition-all shadow-lg text-sm uppercase tracking-wider">Sí, continuar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-[var(--fondo-base)] border border-[var(--borde)] w-full max-w-3xl rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col my-auto relative p-8">
                 <button onClick={() => onClose()} className="absolute top-4 right-4 text-[var(--texto-3)] hover:text-white transition-colors bg-[rgba(255,255,255,0.05)] p-2 rounded-full">
                     <X size={18} />
