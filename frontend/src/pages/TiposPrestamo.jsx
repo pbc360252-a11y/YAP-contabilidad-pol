@@ -17,7 +17,9 @@ export function TiposPrestamo() {
         interes_mora: 0,
         monto_minimo: 0,
         monto_maximo: 0,
-        descripcion: ''
+        descripcion: '',
+        metodo_amortizacion: 'lineal',
+        diferir_cargos: true
     })
     const [tasasDisponibles, setTasasDisponibles] = useState([])
     const [selectedTasas, setSelectedTasas] = useState([])
@@ -53,7 +55,9 @@ export function TiposPrestamo() {
             interes_mora: tipo?.interes_mora || 0,
             monto_minimo: tipo?.monto_minimo || 0,
             monto_maximo: tipo?.monto_maximo || 0,
-            descripcion: tipo?.descripcion || ''
+            descripcion: tipo?.descripcion || '',
+            metodo_amortizacion: tipo?.metodo_amortizacion || 'lineal',
+            diferir_cargos: tipo?.diferir_cargos !== undefined ? tipo.diferir_cargos : true
         })
         setSelectedTasas(tipo?.tasas?.map(t => t.tasa_id) || [])
         setModalOpen(true)
@@ -163,6 +167,14 @@ export function TiposPrestamo() {
                                     <span className="text-white font-bold">{t.interes_corriente}%</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
+                                    <span className="text-[var(--texto-3)]">Método</span>
+                                    <span className="text-[var(--cyan)] font-bold capitalize">{t.metodo_amortizacion === 'frances' ? 'Francesa' : 'Lineal'}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-[var(--texto-3)]">Cargos Únicos</span>
+                                    <span className="text-white font-bold">{t.diferir_cargos ? 'Diferidos' : 'En 1ra cuota'}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
                                     <span className="text-[var(--texto-3)]">Cuotas Máx.</span>
                                     <span className="text-white font-bold">{t.cuotas_maximas} Cuotas</span>
                                 </div>
@@ -221,6 +233,31 @@ export function TiposPrestamo() {
                                 <label className="block text-[var(--texto-2)] text-xs font-bold uppercase tracking-wider mb-2">Monto Máximo</label>
                                 <input type="number" value={formData.monto_maximo} onChange={e => setFormData({ ...formData, monto_maximo: parseFloat(e.target.value) })}
                                     className="w-full bg-[var(--fondo-input)] border border-[var(--borde)] rounded-xl px-4 py-3 text-white focus:border-[#4FD1C5] focus:outline-none" />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[var(--texto-2)] text-xs font-bold uppercase tracking-wider mb-2">Método Amortización</label>
+                                    <select
+                                        value={formData.metodo_amortizacion}
+                                        onChange={e => setFormData({ ...formData, metodo_amortizacion: e.target.value })}
+                                        className="w-full bg-[var(--fondo-input)] border border-[var(--borde)] rounded-xl px-4 py-3 text-white focus:border-[#4FD1C5] focus:outline-none"
+                                    >
+                                        <option value="lineal">Lineal (Capital Const.)</option>
+                                        <option value="frances">Francesa (Cuota Fija)</option>
+                                    </select>
+                                </div>
+                                <div className="flex flex-col justify-end">
+                                    <label className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 cursor-pointer hover:bg-white/10 transition-colors h-[50px]">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.diferir_cargos}
+                                            onChange={e => setFormData({ ...formData, diferir_cargos: e.target.checked })}
+                                            className="accent-[#4FD1C5] w-4 h-4"
+                                        />
+                                        <span className="text-xs text-[var(--texto-1)] font-medium">Diferir cargos únicos</span>
+                                    </label>
+                                </div>
                             </div>
 
                             <div className="pt-2">

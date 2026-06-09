@@ -268,7 +268,9 @@ function ModalSimulador({ onClose, onPrintSuccess, initialPersonaId }) {
         tipo_id: '',
         monto: '',
         cuotas: '12',
-        fechaPrimerPago: new Date().toISOString().split('T')[0]
+        fechaPrimerPago: new Date().toISOString().split('T')[0],
+        metodo_amortizacion: 'lineal',
+        diferir_cargos: true
     })
 
 
@@ -362,13 +364,18 @@ function ModalSimulador({ onClose, onPrintSuccess, initialPersonaId }) {
     }, [initialPersonaId, personas])
 
     useEffect(() => {
-        // Si elige tipo de prestamo, pre-cargar tasas
+        // Si elige tipo de prestamo, pre-cargar tasas, metodo y diferir cargos
         if (formData.tipo_id) {
             const elTipo = tipos.find(t => t.id === formData.tipo_id)
             if (elTipo) {
                 // Inicializar tasasActivas basadas en las del tipo
                 const initial = (elTipo.tasas || []).map(tRel => ({ ...tRel.tasa, activa: true }))
                 setTasasActivas(initial)
+                setFormData(prev => ({
+                    ...prev,
+                    metodo_amortizacion: elTipo.metodo_amortizacion || 'lineal',
+                    diferir_cargos: elTipo.diferir_cargos !== undefined ? elTipo.diferir_cargos : true
+                }))
             }
         }
     }, [formData.tipo_id, tipos])
@@ -380,7 +387,9 @@ function ModalSimulador({ onClose, onPrintSuccess, initialPersonaId }) {
                 montoOtorgado: parseFloat(formData.monto),
                 numeroCuotas: parseInt(formData.cuotas),
                 fechaPrimerPago: formData.fechaPrimerPago,
-                tasasAsignadas: tasasActivas
+                tasasAsignadas: tasasActivas,
+                metodoAmortizacion: formData.metodo_amortizacion,
+                diferirCargos: formData.diferir_cargos
             })
             setCalculo(calc)
             
@@ -392,7 +401,7 @@ function ModalSimulador({ onClose, onPrintSuccess, initialPersonaId }) {
         } else {
             setCalculo(null)
         }
-    }, [formData.monto, formData.cuotas, formData.fechaPrimerPago, tasasActivas])
+    }, [formData.monto, formData.cuotas, formData.fechaPrimerPago, tasasActivas, formData.metodo_amortizacion, formData.diferir_cargos])
 
     const handleTasaChange = (id, field, value) => {
         setTasasActivas(prev => prev.map(t => {
@@ -626,6 +635,31 @@ function ModalSimulador({ onClose, onPrintSuccess, initialPersonaId }) {
 
                         {formData.tipo_id && (
                             <div className="mt-6 pt-6 border-t border-[var(--borde)] space-y-5">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[var(--texto-2)] text-[10px] font-bold uppercase tracking-wider mb-1.5">Método de Amortización</label>
+                                        <select
+                                            value={formData.metodo_amortizacion}
+                                            onChange={e => setFormData({ ...formData, metodo_amortizacion: e.target.value })}
+                                            className="w-full bg-[var(--fondo-input)] border border-[var(--borde)] rounded-xl px-2.5 py-2.5 text-[var(--texto-1)] text-xs font-bold focus:border-[var(--cyan)] focus:outline-none"
+                                        >
+                                            <option value="lineal">Lineal (Capital Const.)</option>
+                                            <option value="frances">Francesa (Cuota Fija)</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col justify-end">
+                                        <label className="flex items-center gap-2 p-2.5 bg-white/5 rounded-xl border border-white/5 cursor-pointer hover:bg-white/10 transition-colors h-[42px]">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.diferir_cargos}
+                                                onChange={e => setFormData({ ...formData, diferir_cargos: e.target.checked })}
+                                                className="accent-[var(--cyan)] w-3.5 h-3.5"
+                                            />
+                                            <span className="text-[9px] text-[var(--texto-1)] font-medium uppercase tracking-wide">Diferir cargos</span>
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <h3 className="text-[var(--texto-1)] font-bold text-xs uppercase tracking-wider mb-2">Tasas y Cargos Aplicados</h3>
                                 
                                 {/* 1. Interés */}

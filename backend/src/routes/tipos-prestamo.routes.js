@@ -1,4 +1,4 @@
-﻿import { Router } from 'express'
+import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 
@@ -43,15 +43,17 @@ router.get('/:id', verificarToken, async (req, res) => {
 // Crear nuevo tipo de préstamo con sus tasas
 router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), async (req, res) => {
     try {
-        const { nombre, descripcion, cuotas_maximas, monto_minimo, monto_maximo, tasasIds } = req.body
+        const { nombre, descripcion, cuotas_maximas, monto_minimo, monto_maximo, metodo_amortizacion, diferir_cargos, tasasIds } = req.body
 
         const nuevoTipo = await prisma.tipoPrestamo.create({
             data: {
                 nombre,
                 descripcion,
-                cuotas_maximas,
-                monto_minimo,
-                monto_maximo,
+                cuotas_maximas: cuotas_maximas !== undefined ? parseInt(cuotas_maximas) : undefined,
+                monto_minimo: monto_minimo !== undefined ? parseFloat(monto_minimo) : undefined,
+                monto_maximo: monto_maximo !== undefined ? parseFloat(monto_maximo) : undefined,
+                metodo_amortizacion: metodo_amortizacion || 'lineal',
+                diferir_cargos: diferir_cargos !== undefined ? Boolean(diferir_cargos) : true,
                 tasas: {
                     create: (tasasIds || []).map((id, idx) => ({
                         tasa_id: id,
@@ -63,6 +65,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), a
         })
         res.status(201).json({ mensaje: 'Tipo creado', tipo: nuevoTipo })
     } catch (error) {
+        console.error(error)
         res.status(500).json({ error: 'Error al crear' })
     }
 })
@@ -71,7 +74,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), a
 router.put('/:id', verificarToken, requiereRol(['superadmin', 'administrador']), async (req, res) => {
     try {
         const id = req.params.id
-        const { nombre, descripcion, cuotas_maximas, monto_minimo, monto_maximo, estado, tasasIds } = req.body
+        const { nombre, descripcion, cuotas_maximas, monto_minimo, monto_maximo, estado, metodo_amortizacion, diferir_cargos, tasasIds } = req.body
 
         // Si envían tasasIds, actualizamos la relación
         let tasasUpdate = {}
@@ -93,10 +96,12 @@ router.put('/:id', verificarToken, requiereRol(['superadmin', 'administrador']),
             data: {
                 nombre,
                 descripcion,
-                cuotas_maximas,
-                monto_minimo,
-                monto_maximo,
+                cuotas_maximas: cuotas_maximas !== undefined ? parseInt(cuotas_maximas) : undefined,
+                monto_minimo: monto_minimo !== undefined ? parseFloat(monto_minimo) : undefined,
+                monto_maximo: monto_maximo !== undefined ? parseFloat(monto_maximo) : undefined,
                 estado,
+                metodo_amortizacion: metodo_amortizacion || undefined,
+                diferir_cargos: diferir_cargos !== undefined ? Boolean(diferir_cargos) : undefined,
                 ...tasasUpdate
             },
             include: { tasas: true }
@@ -104,6 +109,7 @@ router.put('/:id', verificarToken, requiereRol(['superadmin', 'administrador']),
 
         res.json({ mensaje: 'Tipo actualizado', tipo: editado })
     } catch (error) {
+        console.error(error)
         res.status(500).json({ error: 'Error al actualizar' })
     }
 })
