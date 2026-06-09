@@ -65,7 +65,6 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), a
         })
         res.status(201).json({ mensaje: 'Tipo creado', tipo: nuevoTipo })
     } catch (error) {
-        console.error(error)
         res.status(500).json({ error: 'Error al crear' })
     }
 })
@@ -109,7 +108,6 @@ router.put('/:id', verificarToken, requiereRol(['superadmin', 'administrador']),
 
         res.json({ mensaje: 'Tipo actualizado', tipo: editado })
     } catch (error) {
-        console.error(error)
         res.status(500).json({ error: 'Error al actualizar' })
     }
 })

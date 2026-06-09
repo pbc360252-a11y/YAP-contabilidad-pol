@@ -70,7 +70,7 @@ export function calcularPrestamo({ montoOtorgado, numeroCuotas, tasasAsignadas, 
     const nCuotas = parseInt(numeroCuotas)
 
     // Buscamos la tasa periódica de 'interés' para el cálculo francés
-    const tasaInteresPura = tasasPeriodicas.find(t => {
+    const tasaInteresPura = tasasPeriodicas.find(t => t.es_interes_principal) || tasasPeriodicas.find(t => {
         const name = (t.nombre_snapshot ?? t.nombre ?? '').toLowerCase();
         return name.includes('interés') || 
                name.includes('interes') || 

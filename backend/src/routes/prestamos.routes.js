@@ -226,6 +226,7 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
                                 aplica_sobre_snapshot: t.aplica_sobre_snapshot ?? t.aplica_sobre ?? 'capital_inicial',
                                 es_cargo_unico: t.es_cargo_unico ?? false,
                                 es_tasa_mora: t.es_tasa_mora ?? false,
+                                es_interes_principal: t.es_interes_principal ?? false,
                                 activa: true,
                                 orden: idx + 1
                             }))

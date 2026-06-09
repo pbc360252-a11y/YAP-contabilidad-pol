@@ -97,10 +97,16 @@ export const prestamoCrearSchema = z.object({
         aplica_sobre_snapshot: z.string().optional(),
         es_cargo_unico: z.boolean().optional(),
         es_tasa_mora: z.boolean().optional(),
+        es_interes_principal: z.boolean().optional(),
         activa: z.boolean().optional(),
         es_adhoc: z.boolean().optional(),
         guardado: z.boolean().optional(),
-    }).passthrough()).optional().default([]),
+        orden: z.number().int().optional(),
+        se_incluye_en_cuota: z.boolean().optional(),
+        estado: z.string().optional(),
+        fecha_creacion: z.union([z.string(), z.date()]).optional(),
+        creado_por: z.string().nullable().optional()
+    })).optional().default([]),
     metodo_amortizacion: z.string().optional().default('lineal'),
     diferir_cargos: z.boolean().optional().default(true),
     observaciones: z.string().trim().optional().default('')

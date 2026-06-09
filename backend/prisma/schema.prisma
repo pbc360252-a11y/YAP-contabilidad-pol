@@ -64,6 +64,7 @@ model TasaInteres {
   aplica_sobre        String              @default("capital_inicial")
   es_cargo_unico      Boolean             @default(false)
   es_tasa_mora        Boolean             @default(false)
+  es_interes_principal Boolean            @default(false)
   se_incluye_en_cuota Boolean             @default(true)
   estado              String              @default("activa")
   orden_en_tabla      Int                 @default(1)
@@ -93,6 +94,7 @@ model PrestamTasa {
   aplica_sobre_snapshot String
   es_cargo_unico        Boolean      @default(false)
   es_tasa_mora          Boolean      @default(false)
+  es_interes_principal  Boolean      @default(false)
   activa                Boolean      @default(true)
   orden                 Int          @default(1)
   tasa                  TasaInteres? @relation(fields: [tasa_id], references: [id])

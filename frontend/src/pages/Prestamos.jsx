@@ -289,7 +289,7 @@ function ModalSimulador({ onClose, onPrintSuccess, initialPersonaId }) {
         return texto.includes(busquedaPersona.toLowerCase())
     }).slice(0, 10)
 
-    const tasaInteres = tasasActivas.find(t => {
+    const tasaInteres = tasasActivas.find(t => t.es_interes_principal) || tasasActivas.find(t => {
         const name = (t.nombre ?? '').toLowerCase()
         return (name.includes('interés') || name.includes('interes') || name.includes('tasa')) && !t.es_tasa_mora
     })

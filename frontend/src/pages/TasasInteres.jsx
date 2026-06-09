@@ -108,10 +108,11 @@ export function TasasInteres() {
                                         </div>
 
                                         <div>
-                                            <h3 className="text-white font-bold text-lg mb-1 flex items-center gap-3">
+                                            <h3 className="text-white font-bold text-lg mb-1 flex items-center gap-2.5 flex-wrap">
                                                 {t.nombre}
-                                                {t.es_cargo_unico && <span className="text-[10px] bg-[rgba(255,176,32,0.15)] text-[#FFB020] px-2 py-0.5 rounded border border-[#FFB020]/30 uppercase tracking-wider">Cargo Único</span>}
-                                                {t.es_tasa_mora && <span className="text-[10px] bg-[rgba(244,63,94,0.15)] text-[#F43F5E] px-2 py-0.5 rounded border border-[#F43F5E]/30 uppercase tracking-wider">Mora</span>}
+                                                {t.es_interes_principal && <span className="text-[10px] bg-[rgba(79,209,197,0.15)] text-[#4FD1C5] px-2 py-0.5 rounded border border-[#4FD1C5]/30 uppercase tracking-wider font-black">Interés Principal</span>}
+                                                {t.es_cargo_unico && <span className="text-[10px] bg-[rgba(255,176,32,0.15)] text-[#FFB020] px-2 py-0.5 rounded border border-[#FFB020]/30 uppercase tracking-wider font-black">Cargo Único</span>}
+                                                {t.es_tasa_mora && <span className="text-[10px] bg-[rgba(244,63,94,0.15)] text-[#F43F5E] px-2 py-0.5 rounded border border-[#F43F5E]/30 uppercase tracking-wider font-black">Mora</span>}
                                             </h3>
                                             <div className="flex items-center gap-4 text-xs text-[var(--texto-3)] font-mono">
                                                 <span>Cálculo: <b className="text-[#4FD1C5]">{t.tipo_calculo.replace(/_/g, ' ')}</b></span>
@@ -180,6 +181,7 @@ function ModalTasa({ tasa, onClose, onSave }) {
         aplica_sobre: tasa?.aplica_sobre || 'capital_inicial',
         es_cargo_unico: tasa?.es_cargo_unico || false,
         es_tasa_mora: tasa?.es_tasa_mora || false,
+        es_interes_principal: tasa?.es_interes_principal || false,
         se_incluye_en_cuota: tasa?.se_incluye_en_cuota !== false
     })
 
@@ -232,6 +234,10 @@ function ModalTasa({ tasa, onClose, onSave }) {
                     </div>
 
                     <div className="space-y-2 pt-2">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" name="es_interes_principal" checked={formData.es_interes_principal} onChange={handleChange} />
+                            <span className="text-sm text-white">Es el Interés Principal del Crédito</span>
+                        </label>
                         <label className="flex items-center gap-3 cursor-pointer">
                             <input type="checkbox" name="es_cargo_unico" checked={formData.es_cargo_unico} onChange={handleChange} />
                             <span className="text-sm text-white">Es Cargo Único (Solo una vez)</span>
