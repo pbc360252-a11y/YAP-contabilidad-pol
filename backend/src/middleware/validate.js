@@ -85,6 +85,8 @@ export const prestamoCrearSchema = z.object({
     cuotas: z.coerce.number().int().min(1, 'El número de cuotas debe ser mayor a 0.').max(120),
     fechaPrimerPago: z.string().min(1, 'La fecha del primer pago es obligatoria.'),
     tasasPersonalizadas: z.array(z.any()).optional().default([]),
+    metodo_amortizacion: z.string().optional().default('lineal'),
+    diferir_cargos: z.boolean().optional().default(true),
     observaciones: z.string().trim().optional().default('')
 })
 

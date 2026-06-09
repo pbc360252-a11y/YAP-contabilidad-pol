@@ -657,3 +657,111 @@ describe('6. calcularMora - Intereses por Atraso', () => {
         expect(resultado.tasaUsada).toBe(1.5)
     })
 })
+
+    // ── 4f) Tasa Plana / Interés Simple ─────────────────────────────────────
+    describe('4f) Tasa Plana / Interés Simple (metodoAmortizacion = lineal)', () => {
+        it('calcula la cuota exacta de $173.200 con interés 5% mensual (2.5% quincenal) y cargos prorrateados', () => {
+            const capital = 1500000
+            const cuotas = 12
+            // Tasas configuradas:
+            // Interés Corriente: 5% mensual (que se calcula como 2.5% quincenal periódico)
+            // Cargo de estudio: 5% único (es_cargo_unico: true)
+            // Seguro / Póliza: 3.56% único (es_cargo_unico: true)
+            const tasas = [
+                {
+                    nombre: "Interés Corriente",
+                    tipo_calculo: "porcentaje_periodico",
+                    valor_porcentaje: 2.5,
+                    aplica_sobre: "capital_inicial",
+                    es_cargo_unico: false,
+                    activa: true
+                },
+                {
+                    nombre: "Estudio de Crédito",
+                    tipo_calculo: "porcentaje_simple",
+                    valor_porcentaje: 5.0,
+                    es_cargo_unico: true,
+                    activa: true
+                },
+                {
+                    nombre: "Póliza",
+                    tipo_calculo: "porcentaje_simple",
+                    valor_porcentaje: 3.56,
+                    es_cargo_unico: true,
+                    activa: true
+                }
+            ]
+
+            const resultado = calcularPrestamo({
+                montoOtorgado: capital,
+                numeroCuotas: cuotas,
+                fechaPrimerPago: '2026-03-02T12:00:00.000Z',
+                tasasAsignadas: tasas,
+                metodoAmortizacion: 'lineal',
+                diferirCargos: true
+            })
+
+            // Verificar que todas las cuotas sean exactamente $173.200
+            expect(resultado.cuotaPrimera).toBe(173200)
+            expect(resultado.cuotaEstandar).toBe(173200)
+            expect(resultado.cuotaUltima).toBe(173200)
+            expect(resultado.totalPagado).toBe(2078400)
+            expect(resultado.totalIntereses).toBe(450000)
+            expect(resultado.totalCargosUnicos).toBe(128400)
+
+            resultado.tablaCuotas.forEach(cuota => {
+                expect(cuota.cuotaTotal).toBe(173200)
+                expect(cuota.capitalAbonado).toBe(125000)
+                expect(cuota.interesesCobrados).toBe(37500)
+                expect(cuota.cargosUnicos).toBe(10700)
+            })
+        })
+    })
+
+    // ── 4g) Pruebas de Correcciones de Bugs (Porcentajes y simulador) ────────
+    describe('4g) Corrección de Bugs de Simulador y Porcentajes', () => {
+        it('Bug 1: obtenerTasaQuincenal cae al fallback si valor_snapshot está vacío o no es numérico', () => {
+            const tasa = {
+                tipo_calculo: 'porcentaje_periodico',
+                valor_porcentaje: 2.5,
+                valor_snapshot: '' // vacío
+            }
+            expect(obtenerTasaQuincenal(tasa)).toBe(2.5)
+
+            const tasaNaN = {
+                tipo_calculo: 'porcentaje_periodico',
+                valor_porcentaje: 2.5,
+                valor_snapshot: 'invalid-number'
+            }
+            expect(obtenerTasaQuincenal(tasaNaN)).toBe(0) // parseado como 0
+        })
+
+        it('Bug 2: cargo único con tipo monto_fijo no se calcula como porcentaje', () => {
+            const capital = 1000000
+            const tasas = [
+                {
+                    nombre: "Estudio Fijo",
+                    tipo_calculo: "monto_fijo",
+                    valor_fijo: 50000,
+                    valor_snapshot: "50000",
+                    es_cargo_unico: true,
+                    activa: true
+                }
+            ]
+
+            const resultado = calcularPrestamo({
+                montoOtorgado: capital,
+                numeroCuotas: 5,
+                fechaPrimerPago: '2026-03-02',
+                tasasAsignadas: tasas,
+                metodoAmortizacion: 'lineal',
+                diferirCargos: false // Cobrar en cuota 1
+            })
+
+            // El cargo total debe ser $50.000 (y no $500.000 o $10.000 si se dividiera por 100)
+            expect(resultado.totalCargosUnicos).toBe(50000)
+            expect(resultado.tablaCuotas[0].cargosUnicos).toBe(50000)
+            expect(resultado.tablaCuotas[1].cargosUnicos).toBe(0)
+        })
+    })
+

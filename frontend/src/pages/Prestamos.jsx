@@ -379,7 +379,35 @@ function ModalSimulador({ onClose, onPrintSuccess, initialPersonaId }) {
     const handleTasaChange = (id, field, value) => {
         setTasasActivas(prev => prev.map(t => {
             if (t.id === id) {
-                return { ...t, [field]: value }
+                let updated = { ...t, [field]: value }
+                
+                // Si cambia tipo_calculo, sincronizar tipo_calculo_snapshot
+                if (field === 'tipo_calculo') {
+                    updated.tipo_calculo_snapshot = value
+                    
+                    // Al cambiar de tipo, propagar el valor actual a la propiedad base correspondiente
+                    const currentValStr = String(updated.valor_snapshot ?? updated.valor_porcentaje ?? updated.valor_fijo ?? 0).replace(',', '.')
+                    const currentVal = parseFloat(currentValStr) || 0
+                    if (value === 'monto_fijo') {
+                        updated.valor_fijo = currentVal
+                    } else {
+                        updated.valor_porcentaje = currentVal
+                    }
+                }
+                
+                // Si cambia valor_snapshot, propagar al campo base correspondiente según el tipo_calculo actual
+                if (field === 'valor_snapshot') {
+                    const cleanVal = typeof value === 'string' ? value.replace(',', '.') : value
+                    const parsedNum = parseFloat(cleanVal) || 0
+                    const currentTipo = updated.tipo_calculo_snapshot ?? updated.tipo_calculo
+                    if (currentTipo === 'monto_fijo') {
+                        updated.valor_fijo = parsedNum
+                    } else {
+                        updated.valor_porcentaje = parsedNum
+                    }
+                }
+                
+                return updated
             }
             return t;
         }))

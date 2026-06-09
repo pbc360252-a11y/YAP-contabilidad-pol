@@ -117,7 +117,7 @@ router.get('/persona/:pid', verificarToken, async (req, res) => {
 // Simular Préstamo (GET /api/prestamos/simular?monto=X&cuotas=Y&fecha=Z&tasas=[...])
 router.post('/simular', verificarToken, async (req, res) => {
     try {
-        const { monto, cuotas, fechaPrimerPago, tasas } = req.body
+        const { monto, cuotas, fechaPrimerPago, tasas, metodoAmortizacion, diferirCargos } = req.body
 
         // Tasas debe ser un array con el formato de la base de datos o similar para calcularPrestamo
         // El frontend enviará el objeto completo o overrides.
@@ -126,7 +126,9 @@ router.post('/simular', verificarToken, async (req, res) => {
             montoOtorgado: parseFloat(monto),
             numeroCuotas: parseInt(cuotas),
             fechaPrimerPago: new Date(fechaPrimerPago),
-            tasasAsignadas: tasas
+            tasasAsignadas: tasas,
+            metodoAmortizacion,
+            diferirCargos
         })
 
         res.json({ calculo })
@@ -153,7 +155,9 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
             montoOtorgado: parseFloat(data.monto),
             numeroCuotas: parseInt(data.cuotas),
             fechaPrimerPago: new Date(data.fechaPrimerPago),
-            tasasAsignadas: data.tasasPersonalizadas // Array de objetos modificados
+            tasasAsignadas: data.tasasPersonalizadas, // Array de objetos modificados
+            metodoAmortizacion: data.metodo_amortizacion,
+            diferirCargos: data.diferir_cargos
         })
 
         // Transacción para validar, generar códigos y guardar el Préstamo de forma atómica
@@ -186,6 +190,8 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
                     numero_prestamo,
                     monto_otorgado: calculo.montoOtorgado,
                     numero_cuotas: calculo.numeroCuotas,
+                    metodo_amortizacion: data.metodo_amortizacion || 'lineal',
+                    diferir_cargos: data.diferir_cargos !== false,
                     cuota_primera: calculo.cuotaPrimera,
                     cuota_estandar: calculo.cuotaEstandar,
                     cuota_ultima: calculo.cuotaUltima,
@@ -208,7 +214,15 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
                                 tasa_id: t.id?.startsWith('adhoc-') ? null : t.id,
                                 nombre_snapshot: t.nombre_snapshot ?? t.nombre,
                                 tipo_calculo_snapshot: t.tipo_calculo_snapshot ?? t.tipo_calculo,
-                                valor_snapshot: parseFloat(t.valor_snapshot ?? t.valor_porcentaje ?? t.valor_fijo),
+                                valor_snapshot: (() => {
+                                    const tipo = t.tipo_calculo_snapshot ?? t.tipo_calculo
+                                    let valorRaw = t.valor_snapshot
+                                    if (valorRaw === undefined || valorRaw === null || String(valorRaw).trim() === '') {
+                                        valorRaw = (tipo === 'monto_fijo') ? (t.valor_fijo ?? 0) : (t.valor_porcentaje ?? 0)
+                                    }
+                                    const parsed = parseFloat(String(valorRaw).replace(',', '.'))
+                                    return isNaN(parsed) ? 0 : parsed
+                                })(),
                                 aplica_sobre_snapshot: t.aplica_sobre_snapshot ?? t.aplica_sobre ?? 'capital_inicial',
                                 es_cargo_unico: t.es_cargo_unico ?? false,
                                 es_tasa_mora: t.es_tasa_mora ?? false,

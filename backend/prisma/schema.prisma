@@ -40,16 +40,18 @@ model Empresa {
 }
 
 model TipoPrestamo {
-  id             String              @id @default(cuid())
-  nombre         String
-  descripcion    String?
-  cuotas_maximas Int                 @default(24)
-  monto_minimo   Float               @default(100000)
-  monto_maximo   Float               @default(0)
-  estado         String              @default("activo")
-  fecha_creacion DateTime            @default(now())
-  prestamos      Prestamo[]
-  tasas          TipoPrestamo_Tasa[]
+  id                  String              @id @default(cuid())
+  nombre              String
+  descripcion         String?
+  cuotas_maximas      Int                 @default(24)
+  monto_minimo        Float               @default(100000)
+  monto_maximo        Float               @default(0)
+  estado              String              @default("activo")
+  metodo_amortizacion String              @default("lineal")
+  diferir_cargos      Boolean             @default(true)
+  fecha_creacion      DateTime            @default(now())
+  prestamos           Prestamo[]
+  tasas               TipoPrestamo_Tasa[]
 }
 
 model TasaInteres {
@@ -134,6 +136,8 @@ model Prestamo {
   tipo_id             String
   monto_otorgado      Float
   numero_cuotas       Int
+  metodo_amortizacion String            @default("lineal")
+  diferir_cargos      Boolean           @default(true)
   cuota_primera       Float?
   cuota_estandar      Float?
   cuota_ultima        Float?

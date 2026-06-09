@@ -9,8 +9,14 @@ export const redondear4 = (n) => new Decimal(n).toDecimalPlaces(4).toNumber()
 export const redondear6 = (n) => new Decimal(n).toDecimalPlaces(6).toNumber()
 
 export function obtenerTasaQuincenal(tasa) {
-    const v = new Decimal(tasa.valor_snapshot ?? tasa.valor_porcentaje)
     const tipo = tasa.tipo_calculo_snapshot ?? tasa.tipo_calculo
+    let valorRaw = tasa.valor_snapshot
+    if (valorRaw === undefined || valorRaw === null || String(valorRaw).trim() === '') {
+        valorRaw = (tipo === 'monto_fijo') ? (tasa.valor_fijo ?? 0) : (tasa.valor_porcentaje ?? 0)
+    }
+    const vStr = String(valorRaw).replace(',', '.')
+    const parsed = parseFloat(vStr)
+    const v = new Decimal(isNaN(parsed) ? 0 : parsed)
 
     switch (tipo) {
         case 'porcentaje_periodico':
@@ -54,12 +60,13 @@ export function calcularCuotaFija(principal, tasaQuincenal, cuotas) {
     return redondear2(numerador.dividedBy(denominador))
 }
 
-export function calcularPrestamo({ montoOtorgado, numeroCuotas, tasasAsignadas, fechaPrimerPago }) {
+export function calcularPrestamo({ montoOtorgado, numeroCuotas, tasasAsignadas, fechaPrimerPago, metodoAmortizacion = 'frances', diferirCargos = false }) {
     // Separar tasas por tipo
     const tasasPeriodicas = tasasAsignadas.filter(t => t.activa && !t.es_cargo_unico && !t.es_tasa_mora)
     const tasasUnicas = tasasAsignadas.filter(t => t.activa && t.es_cargo_unico)
 
-    const mOtorgado = new Decimal(montoOtorgado)
+    const mOtorgadoStr = String(montoOtorgado ?? 0).replace(',', '.')
+    const mOtorgado = new Decimal(parseFloat(mOtorgadoStr))
     const nCuotas = parseInt(numeroCuotas)
 
     // Buscamos la tasa periódica de 'interés' para el cálculo francés
@@ -74,7 +81,7 @@ export function calcularPrestamo({ montoOtorgado, numeroCuotas, tasasAsignadas, 
 
     const tQuincenalInteres = tasaInteresPura ? obtenerTasaQuincenal(tasaInteresPura) : 0
 
-    const usaCuotaFija = tQuincenalInteres > 0
+    const usaCuotaFija = metodoAmortizacion === 'frances' && tQuincenalInteres > 0
     const cuotaFijaBase = usaCuotaFija ? new Decimal(calcularCuotaFija(mOtorgado.toNumber(), tQuincenalInteres, nCuotas)) : new Decimal(0)
 
     const capitalConstante = mOtorgado.dividedBy(nCuotas)
@@ -116,7 +123,8 @@ export function calcularPrestamo({ montoOtorgado, numeroCuotas, tasasAsignadas, 
             let valor = new Decimal(0)
             const tipoCalc = tasa.tipo_calculo_snapshot ?? tasa.tipo_calculo
             if (tipoCalc === 'monto_fijo') {
-                valor = new Decimal(tasa.valor_snapshot ?? tasa.valor_fijo ?? 0)
+                const vFijoStr = String(tasa.valor_snapshot ?? tasa.valor_fijo ?? 0)
+                valor = new Decimal(parseFloat(vFijoStr.replace(',', '.')))
                 base = new Decimal(0)
             } else {
                 const tasaQ = obtenerTasaQuincenal(tasa)
@@ -144,33 +152,54 @@ export function calcularPrestamo({ montoOtorgado, numeroCuotas, tasasAsignadas, 
             })
         }
 
-        // Cargos únicos solo en cuota 1
+        // Cargos únicos
         let cargosUnicos = new Decimal(0)
-        if (i === 1) {
-            for (const cargo of tasasUnicas) {
-                const v = new Decimal(cargo.valor_snapshot ?? cargo.valor_porcentaje)
-
-                let valor = new Decimal(0)
-                const tipoCalc = cargo.tipo_calculo_snapshot ?? cargo.tipo_calculo
-                if (tipoCalc === 'monto_fijo') {
-                    valor = new Decimal(cargo.valor_snapshot ?? cargo.valor_fijo ?? 0)
-                } else {
-                    const decV = v.dividedBy(100)
-                    valor = mOtorgado.times(decV)
-                }
-
-                // AJUSTE: Redondear el cargo único inmediatamente a 2 decimales
-                const valorRedondeado = new Decimal(redondear2(valor.toNumber()))
-                cargosUnicos = cargosUnicos.plus(valorRedondeado)
-
-                desglose.push({
-                    nombre: cargo.nombre_snapshot ?? cargo.nombre,
-                    base: mOtorgado.toNumber(),
-                    tasaQ: v.toNumber(),
-                    valor: valorRedondeado.toNumber(),
-                    esUnico: true
-                })
+        for (const cargo of tasasUnicas) {
+            const tipoCalc = cargo.tipo_calculo_snapshot ?? cargo.tipo_calculo
+            
+            let valorRaw = cargo.valor_snapshot
+            if (valorRaw === undefined || valorRaw === null || String(valorRaw).trim() === '') {
+                valorRaw = (tipoCalc === 'monto_fijo') ? (cargo.valor_fijo ?? 0) : (cargo.valor_porcentaje ?? 0)
             }
+            
+            const vStr = String(valorRaw).replace(',', '.')
+            const parsed = parseFloat(vStr)
+            const v = new Decimal(isNaN(parsed) ? 0 : parsed)
+
+            let valorTotalCargo = new Decimal(0)
+            if (tipoCalc === 'monto_fijo') {
+                valorTotalCargo = v
+            } else {
+                const decV = v.dividedBy(100)
+                valorTotalCargo = mOtorgado.times(decV)
+            }
+
+            let valorParaEstaCuota = new Decimal(0)
+            if (diferirCargos) {
+                // Si diferimos cargos, se divide equitativamente entre todas las cuotas
+                if (i === nCuotas) {
+                    const yaCobrado = new Decimal(redondear2(valorTotalCargo.dividedBy(nCuotas).toNumber())).times(nCuotas - 1)
+                    valorParaEstaCuota = new Decimal(redondear2(valorTotalCargo.minus(yaCobrado).toNumber()))
+                } else {
+                    valorParaEstaCuota = new Decimal(redondear2(valorTotalCargo.dividedBy(nCuotas).toNumber()))
+                }
+            } else {
+                // Si no se diferen, se cobran 100% en la primera cuota
+                if (i === 1) {
+                    valorParaEstaCuota = new Decimal(redondear2(valorTotalCargo.toNumber()))
+                }
+            }
+
+            const valorRedondeado = new Decimal(redondear2(valorParaEstaCuota.toNumber()))
+            cargosUnicos = cargosUnicos.plus(valorRedondeado)
+
+            desglose.push({
+                nombre: cargo.nombre_snapshot ?? cargo.nombre,
+                base: mOtorgado.toNumber(),
+                tasaQ: v.toNumber(),
+                valor: valorRedondeado.toNumber(),
+                esUnico: true
+            })
         }
 
         // AJUSTE: Cuota Total es la suma exacta de los componentes ya redondeados a 2 decimales
