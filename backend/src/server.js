@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import rateLimit from 'express-rate-limit'
+
 import helmet from 'helmet'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -93,7 +94,18 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', info: 'YAP (CRÉDITOS POR LIBRANZA) API' })
 })
 
-app.use('/api/publico', publicoRoutes)
+// ── Rate Limiter para rutas públicas (sin auth) ───────────────────────────
+// Mucho más restrictivo que el global para evitar flooding del formulario público
+// y enumeración de empresas activas.
+const publicoLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hora
+    max: 5,                    // 5 solicitudes por IP por hora
+    message: { error: 'Demasiadas solicitudes desde esta dirección IP. Por favor espera una hora antes de volver a intentarlo.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+})
+
+app.use('/api/publico', publicoLimiter, publicoRoutes)
 app.use('/api/cliente', clienteRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/configuracion', configuracionRoutes)

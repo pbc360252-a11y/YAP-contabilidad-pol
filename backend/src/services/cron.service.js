@@ -3,8 +3,12 @@ import { prisma } from '../lib/prisma.js'
 import { limpiarTokensExpirados } from './token.service.js'
 import { enviarRecordatorioPago } from './email.service.js'
 
+// Zona horaria de Colombia (UTC-5) — Render corre en UTC.
+// Sin esto, '0 7 * * *' se ejecutaría a las 2 AM Colombia, no a las 7 AM.
+const TZ = { timezone: 'America/Bogota' }
+
 export const iniciarCronJobs = () => {
-    // ── 7 AM diario — Detección de mora (sin N+1) ───────────────────────────
+    // ── 7 AM Colombia — Detección de mora (sin N+1) ─────────────────────────
     cron.schedule('0 7 * * *', async () => {
         console.log('[CRON] Ejecutando detección de mora diaria...')
         try {
@@ -59,9 +63,9 @@ export const iniciarCronJobs = () => {
         } catch (error) {
             console.error('[CRON] Error detectando mora:', error)
         }
-    })
+    }, TZ)
 
-    // ── Días 14 y 28 a las 8 AM — Recordatorios quincenales ────────────────
+    // ── Días 14 y 28 a las 8 AM Colombia — Recordatorios quincenales ────────
     cron.schedule('0 8 14,28 * *', async () => {
         console.log('[CRON] Ejecutando revisión de cuotas próximas a vencer...')
         try {
@@ -109,9 +113,9 @@ export const iniciarCronJobs = () => {
         } catch (err) {
             console.error('[CRON] Error en recordatorios:', err)
         }
-    })
+    }, TZ)
 
-    // ── Medianoche diaria — Corregir préstamos en_mora sin cuotas vencidas ──
+    // ── Medianoche Colombia — Corregir préstamos en_mora sin cuotas vencidas ─
     cron.schedule('0 0 * * *', async () => {
         console.log('[CRON] Verificando consistencia de estados de préstamos...')
         try {
@@ -123,11 +127,8 @@ export const iniciarCronJobs = () => {
             })
             const idsConMoraReal = conCuotasVencidas.map(c => c.prestamo_id)
 
-            // Guard: si no hay ninguna cuota vencida, todos los en_mora sin cuotas
-            // vencidas deben pasar a activo — pero solo si hay al menos un préstamo en_mora
-            // para no ejecutar un updateMany innecesario.
+            // Guard: si no hay cuotas vencidas reales, resetear todos los en_mora
             if (idsConMoraReal.length === 0) {
-                // No hay cuotas vencidas reales — resetear todos los en_mora a activo
                 const reseteo = await prisma.prestamo.updateMany({
                     where: { estado: 'en_mora' },
                     data: { estado: 'activo' }
@@ -153,9 +154,9 @@ export const iniciarCronJobs = () => {
         } catch (err) {
             console.error('[CRON] Error en verificación de consistencia:', err)
         }
-    })
+    }, TZ)
 
-    // ── 3 AM diaria — Limpieza de Refresh Tokens expirados ─────────────────
+    // ── 3 AM Colombia — Limpieza de Refresh Tokens expirados ────────────────
     cron.schedule('0 3 * * *', async () => {
         try {
             const eliminados = await limpiarTokensExpirados()
@@ -165,7 +166,7 @@ export const iniciarCronJobs = () => {
         } catch (err) {
             console.error('[CRON] Error limpiando tokens expirados:', err)
         }
-    })
+    }, TZ)
 
-    console.log('⏳ Cron jobs inicializados correctamente (node-cron)')
+    console.log('⏳ Cron jobs inicializados correctamente (node-cron) — Zona horaria: America/Bogota')
 }

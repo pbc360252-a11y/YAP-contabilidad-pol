@@ -5,7 +5,7 @@ import { verificarToken } from '../middleware/auth.js'
 import { diagnosticarEmailService, enviarConfirmacionRegistro } from '../services/email.service.js'
 import rateLimit from 'express-rate-limit'
 import { validate, loginSchema } from '../middleware/validate.js'
-import { generarTokens, renovarAccessToken, revocarRefreshToken } from '../services/token.service.js'
+import { generarTokens, renovarAccessToken, revocarRefreshToken, REFRESH_TOKEN_EXPIRY_DAYS } from '../services/token.service.js'
 
 const router = Router()
 
@@ -94,7 +94,7 @@ router.post('/refresh', async (req, res) => {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? 'Strict' : 'Lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000, // Sincronizado con BD
             path: '/api/auth'
         })
 

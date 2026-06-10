@@ -4,8 +4,8 @@ import { prisma } from '../lib/prisma.js'
 import { jwtSecret } from '../middleware/auth.js'
 
 // ── Configuración de tokens ──────────────────────────────────────────────────
-const ACCESS_TOKEN_EXPIRY  = '1h'    // Access token: 1 hora (corta vida)
-const REFRESH_TOKEN_EXPIRY = 30      // Refresh token: 30 días (en días)
+const ACCESS_TOKEN_EXPIRY      = '15m'   // Access token: 15 minutos (reduce ventana de token robado)
+export const REFRESH_TOKEN_EXPIRY_DAYS = 30     // Refresh token: 30 días (usado en BD y en la cookie)
 
 /**
  * Genera un par de tokens: access token (JWT corto) + refresh token (aleatorio largo)
@@ -21,7 +21,7 @@ export const generarTokens = async (usuario) => {
     // 2. Refresh Token (cadena aleatoria + fecha de expiración)
     const refreshTokenValue = crypto.randomBytes(64).toString('hex')
     const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY)
+    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS)
 
     // 3. Guardar refresh token en BD (invalida los anteriores del mismo usuario si quieres sesión única)
     await prisma.refreshToken.create({
@@ -63,7 +63,7 @@ export const renovarAccessToken = async (refreshTokenValue) => {
     // 2. Emitir nuevo refresh token
     const newRefreshTokenValue = crypto.randomBytes(64).toString('hex')
     const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY)
+    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS)
     await prisma.refreshToken.create({
         data: {
             token: newRefreshTokenValue,
