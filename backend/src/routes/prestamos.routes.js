@@ -128,11 +128,11 @@ router.post('/simular', verificarToken, async (req, res) => {
             return res.status(400).json({ error: 'Debe incluir al menos una tasa activa como interés principal.' })
         }
 
-        // Validar tasa de usura antes de simular
+        // Advertencia de usura (no bloquea — software a medida)
         if (tasas && tasas.length > 0) {
             const usuraVal = await validarTasaUsura(tasas)
             if (usuraVal.excede) {
-                return res.status(400).json({ error: usuraVal.mensaje })
+                console.warn('[simulacion] Advertencia de usura (no bloqueante):', usuraVal.mensaje)
             }
         }
 
@@ -166,10 +166,10 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
             return res.status(400).json({ error: 'El préstamo debe tener al menos una tasa activa marcada como interés principal.' })
         }
 
-        // Validar tasa de usura en el backend antes de procesar
+        // Advertencia de usura (no bloquea — software a medida)
         const usuraVal = await validarTasaUsura(data.tasasPersonalizadas)
         if (usuraVal.excede) {
-            return res.status(400).json({ error: usuraVal.mensaje })
+            console.warn('[crear-prestamo] Advertencia de usura (no bloqueante):', usuraVal.mensaje)
         }
 
         // Calcular con motor (fuera de transacción)

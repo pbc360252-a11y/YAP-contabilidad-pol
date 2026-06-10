@@ -467,10 +467,14 @@ function ModalSimulador({ onClose, onPrintSuccess, initialPersonaId }) {
             })
             setCalculo(calc)
             
-            // Validación regulatoria de Usura
+            // Alerta informativa de usura (no bloquea la creación del préstamo)
             const validation = validarTasaUsura(tasasActivas)
             if (validation.excede) {
-                toast.error(validation.mensaje, { id: 'usura-warning', duration: 4000 })
+                toast('⚠️ ' + validation.mensaje, {
+                    id: 'usura-warning',
+                    duration: 5000,
+                    style: { background: '#92400e', color: '#fef3c7', fontWeight: 'bold' }
+                })
             }
         } else {
             setCalculo(null)
