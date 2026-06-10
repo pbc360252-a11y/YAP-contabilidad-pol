@@ -1,4 +1,4 @@
-﻿import { Router } from 'express'
+import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { verificarToken, requiereRol } from '../middleware/auth.js'
 
@@ -21,6 +21,10 @@ router.put('/', verificarToken, requiereRol(['superadmin']), async (req, res) =>
     try {
         const values = req.body // Espera { key1: 'value', key2: 'value' }
         for (const [clave, valor] of Object.entries(values)) {
+            // No sobreescribir la API Key si se envía el valor enmascarado
+            if (clave === 'email_resend_api_key' && (valor === '••••••••' || String(valor).includes('...'))) {
+                continue
+            }
             await prisma.configuracion.upsert({
                 where: { clave },
                 update: { valor: String(valor) },

@@ -129,8 +129,8 @@ router.get('/me', verificarToken, (req, res) => {
 
 // ── Diagnóstico del Servicio de Correo ─────────────────────────
 // GET /api/auth/test-email → Verifica configuración sin enviar
-router.get('/test-email', verificarToken, (req, res) => {
-    const diagnostico = diagnosticarEmailService()
+router.get('/test-email', verificarToken, async (req, res) => {
+    const diagnostico = await diagnosticarEmailService()
     res.json({
         mensaje: diagnostico.configurado
             ? '✅ Servicio de correo configurado y listo para enviar'

@@ -7,7 +7,8 @@ import { validate, pagoCrearSchema } from '../middleware/validate.js'
 import { registrarAccion } from '../services/audit.service.js'
 import crypto from 'crypto'
 import { procesarPagoCuota } from '../services/pagos.service.js'
-import { generarHash } from '../services/crypto.service.js'
+import { generarHash, descifrarPersona } from '../services/crypto.service.js'
+import { enviarConfirmacionPago } from '../services/email.service.js'
 
 // Usando mismo truncamiento de finanzas
 const redondear2 = (n) => new Decimal(n).toDecimalPlaces(2).toNumber()
@@ -101,6 +102,25 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador', 'co
                 comprobante: resultado.numero_comprobante
             }
         })
+
+        // Enviar correo de confirmación al deudor de forma asíncrona
+        try {
+            const persona = await prisma.persona.findUnique({ where: { id: resultado.persona_id } })
+            const personaDescifrada = descifrarPersona(persona)
+            if (personaDescifrada && personaDescifrada.correo) {
+                const nombreCompleto = `${personaDescifrada.primer_nombre || ''} ${personaDescifrada.primer_apellido || ''}`.trim()
+                enviarConfirmacionPago({
+                    email: personaDescifrada.correo,
+                    nombreCompleto,
+                    montoPagado: resultado.monto_pagado,
+                    saldoRestante: resultado.saldo_despues,
+                    numeroCuota: resultado.numero_cuota,
+                    comprobante: resultado.numero_comprobante
+                }).catch(err => console.error('[pagos/individual] Error al enviar confirmación de abono por correo:', err.message))
+            }
+        } catch (emailErr) {
+            console.error('[pagos/individual] Error al preparar envío de correo de abono:', emailErr.message)
+        }
 
         res.status(201).json({ mensaje: 'Pago registrado exitosamente', pago: resultado })
     } catch (error) {
@@ -202,6 +222,20 @@ router.post('/masivo', verificarToken, requiereRol(['superadmin', 'administrador
             });
 
             resultados.push({ index: i, success: true, persona: `${persona.primer_nombre} ${persona.primer_apellido}`, monto: item.monto });
+
+            // Enviar correo de confirmación de forma asíncrona (no bloquea el bucle masivo)
+            const personaDescifrada = descifrarPersona(persona)
+            if (personaDescifrada && personaDescifrada.correo) {
+                const nombreCompleto = `${personaDescifrada.primer_nombre || ''} ${personaDescifrada.primer_apellido || ''}`.trim()
+                enviarConfirmacionPago({
+                    email: personaDescifrada.correo,
+                    nombreCompleto,
+                    montoPagado: pagoResult.monto_pagado,
+                    saldoRestante: pagoResult.saldo_despues,
+                    numeroCuota: pagoResult.numero_cuota,
+                    comprobante: pagoResult.numero_comprobante
+                }).catch(err => console.error('[pagos/masivo] Error al enviar confirmación de abono por correo:', err.message))
+            }
 
         } catch (err) {
             resultados.push({ index: i, success: false, error: err.message, raw: item.cedula || item.nombre });

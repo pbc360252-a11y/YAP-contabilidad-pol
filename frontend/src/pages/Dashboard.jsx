@@ -43,6 +43,10 @@ export function Dashboard() {
     const [sendingTest, setSendingTest] = useState(false)
     const [testResult, setTestResult] = useState(null)
 
+    const [configApiKey, setConfigApiKey] = useState('')
+    const [configFrom, setConfigFrom] = useState('')
+    const [savingConfig, setSavingConfig] = useState(false)
+
     const handlePrintAmortizacion = useReactToPrint({
         contentRef: amortizacionPrintRef,
         documentTitle: `AMORT-${prestamoParaAmortizar?.id?.slice(0, 8) || 'DOC'}`,
@@ -220,6 +224,8 @@ export function Dashboard() {
         try {
             const res = await api.get('/auth/test-email')
             setDiagEmail(res.data)
+            setConfigApiKey(res.data.apiKey || '')
+            setConfigFrom(res.data.remitente || '')
         } catch (error) {
             console.error("Error al cargar diagnóstico de correo", error)
         } finally {
@@ -252,6 +258,28 @@ export function Dashboard() {
             toast.error(errMsg)
         } finally {
             setSendingTest(false)
+        }
+    }
+
+    const guardarConfiguracionCorreo = async (e) => {
+        e.preventDefault()
+        if (!configFrom) {
+            toast.error("Por favor ingresa el correo remitente (EMAIL_FROM)")
+            return
+        }
+        setSavingConfig(true)
+        try {
+            await api.put('/configuracion', {
+                email_resend_api_key: configApiKey,
+                email_from: configFrom
+            })
+            toast.success("Configuración de correo guardada con éxito")
+            await cargarDiagnosticoEmail()
+        } catch (error) {
+            console.error(error)
+            toast.error(error.response?.data?.error || "Error al guardar configuración de correo")
+        } finally {
+            setSavingConfig(false)
         }
     }
 
@@ -585,20 +613,67 @@ export function Dashboard() {
                                 </table>
                             </div>
 
-                            {!diagEmail?.configurado && (
-                                <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-400 space-y-2 text-left">
-                                    <p className="font-bold uppercase tracking-wider text-[10px]">⚠️ Instrucciones de Activación:</p>
-                                    <ul className="list-disc list-inside space-y-1 text-[var(--texto-2)]">
-                                        <li>Crea una cuenta gratuita en <a href="https://resend.com" target="_blank" rel="noreferrer" className="text-amber-400 font-bold underline">resend.com</a></li>
-                                        <li>Crea una API Key y añádela como variable de entorno <strong>RESEND_API_KEY</strong> en Render.</li>
-                                        <li>Establece <strong>EMAIL_FROM</strong> con tu correo o dominio verificado (ej: <code>onboarding@resend.dev</code> para la cuenta de pruebas).</li>
-                                    </ul>
-                                </div>
-                            )}
+                            <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-xs text-blue-400 space-y-2 text-left">
+                                <p className="font-bold uppercase tracking-wider text-[10px]">💡 Configuración Directa del Servidor:</p>
+                                <p className="text-[var(--texto-2)]">
+                                    Los parámetros de correo se guardan directamente en la base de datos de la aplicación. Ya no dependes de las variables de entorno de Render para modificarlos.
+                                </p>
+                            </div>
                         </div>
 
-                        {/* Formulario de envío de prueba */}
-                        <div className="lg:col-span-7 flex flex-col space-y-4 text-left">
+                        {/* Configuración y Envío de prueba */}
+                        <div className="lg:col-span-7 flex flex-col space-y-6 text-left">
+                            {/* Formulario de Configuración */}
+                            <form onSubmit={guardarConfiguracionCorreo} className={`p-6 rounded-3xl border ${
+                                vistaPremium ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-[var(--borde)]'
+                            } flex flex-col gap-4`}>
+                                <h4 className="text-xs font-black text-[var(--texto-1)] uppercase tracking-[0.2em] font-syne">Ajustes de Credenciales</h4>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[9px] uppercase tracking-wider text-[var(--texto-3)] font-bold">Resend API Key:</label>
+                                        <input 
+                                            type="text"
+                                            placeholder="re_..."
+                                            value={configApiKey}
+                                            onChange={(e) => setConfigApiKey(e.target.value)}
+                                            className={`px-4 py-2.5 rounded-xl text-sm border focus:outline-none transition-all ${
+                                                vistaPremium 
+                                                    ? 'bg-black/40 border-white/10 text-white focus:border-[#4FD1C5]' 
+                                                    : 'bg-white border-[var(--borde)] text-slate-900 focus:border-teal-500'
+                                            }`}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[9px] uppercase tracking-wider text-[var(--texto-3)] font-bold">Correo Remitente (EMAIL_FROM):</label>
+                                        <input 
+                                            type="text"
+                                            placeholder="ej: onboarding@resend.dev"
+                                            value={configFrom}
+                                            onChange={(e) => setConfigFrom(e.target.value)}
+                                            className={`px-4 py-2.5 rounded-xl text-sm border focus:outline-none transition-all ${
+                                                vistaPremium 
+                                                    ? 'bg-black/40 border-white/10 text-white focus:border-[#4FD1C5]' 
+                                                    : 'bg-white border-[var(--borde)] text-slate-900 focus:border-teal-500'
+                                            }`}
+                                        />
+                                    </div>
+                                </div>
+
+                                <button 
+                                    type="submit"
+                                    disabled={savingConfig}
+                                    className={`w-fit self-end px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        vistaPremium 
+                                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg' 
+                                            : 'bg-teal-600 hover:bg-teal-700 text-white shadow-md'
+                                    } disabled:opacity-50`}
+                                >
+                                    {savingConfig ? 'Guardando...' : 'Guardar Ajustes'}
+                                </button>
+                            </form>
+
+                            {/* Formulario de envío de prueba */}
                             <form onSubmit={enviarCorreoPrueba} className={`p-6 rounded-3xl border ${
                                 vistaPremium ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-[var(--borde)]'
                             } flex flex-col gap-4`}>
