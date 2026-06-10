@@ -32,7 +32,7 @@ export const generarTokens = async (usuario) => {
         }
     })
 
-    return { accessToken, refreshToken: refreshTokenValue, expiresIn: REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 }
+    return { accessToken, refreshToken: refreshTokenValue, expiresIn: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 }
 }
 
 /**
