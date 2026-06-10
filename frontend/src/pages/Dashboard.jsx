@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { KPICard } from '../components/ui/KPICard'
 import { BadgeEstado } from '../components/ui/BadgeEstado'
-import { Users, Briefcase, TrendingUp, ChevronRight, Printer, FileSpreadsheet } from 'lucide-react'
+import { Users, Briefcase, TrendingUp, ChevronRight, Printer, FileSpreadsheet, AlertTriangle } from 'lucide-react'
 import api from '../utils/api'
 import toast from 'react-hot-toast'
 import { formatCOP, formatCOPCorto } from '../utils/formatCOP'
