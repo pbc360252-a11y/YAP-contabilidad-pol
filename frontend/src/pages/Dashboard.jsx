@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { KPICard } from '../components/ui/KPICard'
 import { BadgeEstado } from '../components/ui/BadgeEstado'
-import { Users, Briefcase, TrendingUp, AlertTriangle, ChevronRight, Printer, FileSpreadsheet, Check } from 'lucide-react'
+import { Users, Briefcase, TrendingUp, ChevronRight, Printer, FileSpreadsheet } from 'lucide-react'
 import api from '../utils/api'
 import toast from 'react-hot-toast'
 import { formatCOP, formatCOPCorto } from '../utils/formatCOP'
@@ -36,16 +36,6 @@ export function Dashboard() {
     const [prestamosMasivos, setPrestamosMasivos] = useState([])
     const amortizacionPrintRef = useRef()
     const amortizacionMasivaPrintRef = useRef()
-
-    const [diagEmail, setDiagEmail] = useState(null)
-    const [loadingDiag, setLoadingDiag] = useState(false)
-    const [testEmail, setTestEmail] = useState('')
-    const [sendingTest, setSendingTest] = useState(false)
-    const [testResult, setTestResult] = useState(null)
-
-    const [configApiKey, setConfigApiKey] = useState('')
-    const [configFrom, setConfigFrom] = useState('')
-    const [savingConfig, setSavingConfig] = useState(false)
 
     const handlePrintAmortizacion = useReactToPrint({
         contentRef: amortizacionPrintRef,
@@ -217,78 +207,8 @@ export function Dashboard() {
         }
     }
 
-    const cargarDiagnosticoEmail = async () => {
-        const isAdmin = usuario?.rol === 'superadmin' || usuario?.rol === 'administrador'
-        if (!isAdmin) return
-        setLoadingDiag(true)
-        try {
-            const res = await api.get('/auth/test-email')
-            setDiagEmail(res.data)
-            setConfigApiKey(res.data.apiKey || '')
-            setConfigFrom(res.data.remitente || '')
-        } catch (error) {
-            console.error("Error al cargar diagnóstico de correo", error)
-        } finally {
-            setLoadingDiag(false)
-        }
-    }
-
-    const enviarCorreoPrueba = async (e) => {
-        e.preventDefault()
-        if (!testEmail) {
-            toast.error("Por favor ingresa un correo de destino")
-            return
-        }
-        setSendingTest(true)
-        setTestResult(null)
-        try {
-            const res = await api.post('/auth/test-email', { email: testEmail })
-            setTestResult(res.data)
-            if (res.data.resendError) {
-                toast.error("El simulador guardó el correo pero Resend falló")
-            } else if (res.data.method === 'resend') {
-                toast.success("¡Correo real enviado con éxito!")
-            } else {
-                toast.success("Correo simulado guardado en el servidor")
-            }
-        } catch (error) {
-            console.error(error)
-            const errMsg = error.response?.data?.error || "Error al enviar correo de prueba"
-            setTestResult({ error: errMsg })
-            toast.error(errMsg)
-        } finally {
-            setSendingTest(false)
-        }
-    }
-
-    const guardarConfiguracionCorreo = async (e) => {
-        e.preventDefault()
-        if (!configFrom) {
-            toast.error("Por favor ingresa el correo remitente (EMAIL_FROM)")
-            return
-        }
-        setSavingConfig(true)
-        try {
-            await api.put('/configuracion', {
-                email_resend_api_key: configApiKey,
-                email_from: configFrom
-            })
-            toast.success("Configuración de correo guardada con éxito")
-            await cargarDiagnosticoEmail()
-        } catch (error) {
-            console.error(error)
-            toast.error(error.response?.data?.error || "Error al guardar configuración de correo")
-        } finally {
-            setSavingConfig(false)
-        }
-    }
-
     useEffect(() => {
         cargar()
-        const isAdmin = usuario?.rol === 'superadmin' || usuario?.rol === 'administrador'
-        if (isAdmin) {
-            cargarDiagnosticoEmail()
-        }
         const interval = setInterval(() => cargar(true), 30000) // Poll every 30s
         return () => clearInterval(interval)
     }, [usuario])
@@ -552,183 +472,7 @@ export function Dashboard() {
 
             </div>
 
-            {/* Panel de Diagnóstico de Correo (Solo para Administradores) */}
-            {(usuario?.rol === 'superadmin' || usuario?.rol === 'administrador') && (
-                <div className={`rounded-[40px] p-8 relative overflow-hidden transition-all duration-500 hover:shadow-xl mt-8 ${
-                    vistaPremium ? 'premium-glass border-white/5' : 'bg-white border-[var(--borde)] shadow-sm'
-                }`}>
-                    <div className="absolute top-0 right-0 w-[30%] h-[30%] bg-blue-500/5 blur-[80px] rounded-full pointer-events-none"></div>
-                    
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                        <div>
-                            <h3 className="text-sm font-black text-[var(--texto-1)] uppercase tracking-[0.3em] font-syne">
-                                Telemetría y Configuración del Servicio de Correo
-                            </h3>
-                            <p className="text-[10px] text-[var(--texto-3)] uppercase tracking-widest mt-1">
-                                Estado de la integración con Resend API para notificaciones automáticas
-                            </p>
-                        </div>
-                        <button 
-                            onClick={cargarDiagnosticoEmail} 
-                            disabled={loadingDiag}
-                            className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                vistaPremium ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white' : 'bg-slate-50 border-[var(--borde)] hover:bg-slate-100 text-slate-700'
-                            }`}
-                        >
-                            {loadingDiag ? 'Refrescando...' : 'Refrescar Estado'}
-                        </button>
-                    </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* Estado e Info */}
-                        <div className="lg:col-span-5 space-y-5">
-                            <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                                    diagEmail?.configurado 
-                                        ? 'bg-emerald-500/10 border border-emerald-500/20' 
-                                        : 'bg-amber-500/10 border border-amber-500/20'
-                                }`}>
-                                    {diagEmail?.configurado ? (
-                                        <Check className="text-emerald-400" size={24} />
-                                    ) : (
-                                        <AlertTriangle className="text-amber-400 animate-pulse" size={24} />
-                                    )}
-                                </div>
-                                <div>
-                                    <span className="text-[9px] uppercase tracking-widest text-[var(--texto-3)] font-bold font-syne">Estado del Servicio</span>
-                                    <h4 className="text-sm font-black text-[var(--texto-1)] mt-0.5 font-syne">
-                                        {diagEmail?.configurado ? 'CONECTADO REAL (RESEND API)' : 'MODO SIMULACIÓN LOCAL'}
-                                    </h4>
-                                </div>
-                            </div>
-
-                            <div className={`p-5 rounded-2xl border ${
-                                vistaPremium ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-[var(--borde)]'
-                            }`}>
-                                <table className="w-full text-xs">
-                                    <tbody>
-                                        <tr className="border-b border-white/5"><td className="py-2.5 text-[var(--texto-3)] font-bold uppercase tracking-wider text-[10px] text-left">Remitente (EMAIL_FROM):</td><td className="py-2.5 text-right font-mono text-[var(--texto-1)] font-semibold">{diagEmail?.remitente || 'Cargando...'}</td></tr>
-                                        <tr className="border-b border-white/5"><td className="py-2.5 text-[var(--texto-3)] font-bold uppercase tracking-wider text-[10px] text-left">Modo Operativo:</td><td className="py-2.5 text-right font-mono text-[var(--texto-1)] font-semibold">{diagEmail?.modo === 'resend_api' ? 'Producción (Resend)' : 'Pruebas (Simulador Local)'}</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-xs text-blue-400 space-y-2 text-left">
-                                <p className="font-bold uppercase tracking-wider text-[10px]">💡 Configuración Directa del Servidor:</p>
-                                <p className="text-[var(--texto-2)]">
-                                    Los parámetros de correo se guardan directamente en la base de datos de la aplicación. Ya no dependes de las variables de entorno de Render para modificarlos.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Configuración y Envío de prueba */}
-                        <div className="lg:col-span-7 flex flex-col space-y-6 text-left">
-                            {/* Formulario de Configuración */}
-                            <form onSubmit={guardarConfiguracionCorreo} className={`p-6 rounded-3xl border ${
-                                vistaPremium ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-[var(--borde)]'
-                            } flex flex-col gap-4`}>
-                                <h4 className="text-xs font-black text-[var(--texto-1)] uppercase tracking-[0.2em] font-syne">Ajustes de Credenciales</h4>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[9px] uppercase tracking-wider text-[var(--texto-3)] font-bold">Resend API Key:</label>
-                                        <input 
-                                            type="text"
-                                            placeholder="re_..."
-                                            value={configApiKey}
-                                            onChange={(e) => setConfigApiKey(e.target.value)}
-                                            className={`px-4 py-2.5 rounded-xl text-sm border focus:outline-none transition-all ${
-                                                vistaPremium 
-                                                    ? 'bg-black/40 border-white/10 text-white focus:border-[#4FD1C5]' 
-                                                    : 'bg-white border-[var(--borde)] text-slate-900 focus:border-teal-500'
-                                            }`}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[9px] uppercase tracking-wider text-[var(--texto-3)] font-bold">Correo Remitente (EMAIL_FROM):</label>
-                                        <input 
-                                            type="text"
-                                            placeholder="ej: onboarding@resend.dev"
-                                            value={configFrom}
-                                            onChange={(e) => setConfigFrom(e.target.value)}
-                                            className={`px-4 py-2.5 rounded-xl text-sm border focus:outline-none transition-all ${
-                                                vistaPremium 
-                                                    ? 'bg-black/40 border-white/10 text-white focus:border-[#4FD1C5]' 
-                                                    : 'bg-white border-[var(--borde)] text-slate-900 focus:border-teal-500'
-                                            }`}
-                                        />
-                                    </div>
-                                </div>
-
-                                <button 
-                                    type="submit"
-                                    disabled={savingConfig}
-                                    className={`w-fit self-end px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                        vistaPremium 
-                                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg' 
-                                            : 'bg-teal-600 hover:bg-teal-700 text-white shadow-md'
-                                    } disabled:opacity-50`}
-                                >
-                                    {savingConfig ? 'Guardando...' : 'Guardar Ajustes'}
-                                </button>
-                            </form>
-
-                            {/* Formulario de envío de prueba */}
-                            <form onSubmit={enviarCorreoPrueba} className={`p-6 rounded-3xl border ${
-                                vistaPremium ? 'bg-white/[0.02] border-white/5' : 'bg-slate-50 border-[var(--borde)]'
-                            } flex flex-col gap-4`}>
-                                <h4 className="text-xs font-black text-[var(--texto-1)] uppercase tracking-[0.2em] mb-2 font-syne">Enviar Correo de Prueba</h4>
-                                
-                                <div className="flex flex-col md:flex-row gap-3">
-                                    <input 
-                                        type="email"
-                                        placeholder="Ingresa tu correo para probar"
-                                        value={testEmail}
-                                        onChange={(e) => setTestEmail(e.target.value)}
-                                        className={`flex-1 px-4 py-3 rounded-xl text-sm border focus:outline-none transition-all ${
-                                            vistaPremium 
-                                                ? 'bg-black/40 border-white/10 text-white focus:border-[#4FD1C5]' 
-                                                : 'bg-white border-[var(--borde)] text-slate-900 focus:border-teal-500'
-                                        }`}
-                                    />
-                                    <button 
-                                        type="submit"
-                                        disabled={sendingTest}
-                                        className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                                            vistaPremium 
-                                                ? 'bg-[#1A6FFF] hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20' 
-                                                : 'bg-teal-600 hover:bg-teal-700 text-white shadow-md'
-                                        } disabled:opacity-50 flex items-center justify-center gap-2`}
-                                    >
-                                        {sendingTest ? 'Enviando...' : 'Probar Envío'}
-                                    </button>
-                                </div>
-                            </form>
-
-                            {/* Consola de Resultados */}
-                            {testResult && (
-                                <div className={`p-5 rounded-2xl border font-mono text-[11px] leading-relaxed ${
-                                    testResult.error || testResult.resendError
-                                        ? 'bg-rose-500/5 border-rose-500/25 text-rose-300' 
-                                        : 'bg-emerald-500/5 border-emerald-500/25 text-emerald-300'
-                                }`}>
-                                    <p className="font-bold uppercase tracking-wider text-[10px] mb-2">Resultado de la Transmisión:</p>
-                                    <p className="whitespace-pre-wrap">{testResult.mensaje || testResult.error}</p>
-                                    {testResult.resendError && (
-                                        <div className="mt-3 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 space-y-1">
-                                            <p className="font-bold uppercase tracking-wider text-[9px]">Detalle del error devuelto por Resend:</p>
-                                            <p className="font-sans text-[11px]">{testResult.resendError}</p>
-                                            <p className="font-sans text-[10px] text-rose-300 mt-2 font-syne">
-                                                💡 Sugerencia: Si estás usando una cuenta gratuita de Resend sin dominio propio, asegúrate de que el EMAIL_FROM esté configurado exactamente como onboarding@resend.dev y que el destinatario sea el mismo correo con el que te registraste en Resend.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Hidden Print Containers */}
             <div style={{ position: 'absolute', top: '-9999px', opacity: 0, pointerEvents: 'none' }}>
