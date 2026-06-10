@@ -4,7 +4,7 @@ import { verificarToken, requiereRol } from '../middleware/auth.js'
 import { calcularPrestamo, validarTasaUsura } from '../services/financiero.service.js'
 import { validate, prestamoCrearSchema } from '../middleware/validate.js'
 import { registrarAccion } from '../services/audit.service.js'
-import { enviarConfirmacionDesembolso } from '../services/email.service.js'
+import { enviarConfirmacionDesembolso, enviarConfirmacionRegistro } from '../services/email.service.js'
 import { descifrarPersona } from '../services/crypto.service.js'
 
 const router = Router()
@@ -306,6 +306,27 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
                 persona_id: resultado.persona_id
             }
         })
+
+        // Enviar correo de confirmación al cliente (no bloquea la respuesta)
+        try {
+            const persona = await prisma.persona.findUnique({ where: { id: resultado.persona_id } })
+            const personaDescifrada = descifrarPersona(persona)
+            const correo = personaDescifrada?.correo
+            if (correo) {
+                const nombreCompleto = `${personaDescifrada.primer_nombre || ''} ${personaDescifrada.primer_apellido || ''}`.trim()
+                await enviarConfirmacionDesembolso({
+                    email: correo,
+                    nombreCompleto,
+                    montoDesembolsado: resultado.monto_otorgado,
+                    codigoPrestamo: resultado.codigo
+                })
+                console.log(`[prestamos/crear] ✅ Correo de confirmación enviado a ${correo}`)
+            } else {
+                console.warn(`[prestamos/crear] ⚠️ La persona no tiene correo registrado, no se envió notificación`)
+            }
+        } catch (emailErr) {
+            console.error('[prestamos/crear] Error enviando correo de confirmación:', emailErr.message)
+        }
 
         res.status(201).json({ mensaje: 'Préstamo creado con éxito', prestamo: resultado })
     } catch (error) {
