@@ -467,21 +467,28 @@ router.put('/:id/desembolsar', verificarToken, requiereRol(['superadmin', 'admin
             }
         })
 
-        // 4. Enviar notificación por correo
-        if (prestamoActualizado.persona && prestamoActualizado.persona.correo) {
+        // 4. Enviar notificación por correo (descifrar datos PII primero)
+        const personaDescifrada = descifrarPersona(prestamoActualizado.persona)
+        if (personaDescifrada && personaDescifrada.correo) {
             const num = prestamoActualizado.numero_prestamo || 0
             const codigo = prestamoActualizado.codigo || `LYAP${String(num).padStart(5, '0')}`
-            const nombreCompleto = `${prestamoActualizado.persona.primer_nombre}${prestamoActualizado.persona.segundo_nombre ? ' ' + prestamoActualizado.persona.segundo_nombre : ''} ${prestamoActualizado.persona.primer_apellido}${prestamoActualizado.persona.segundo_apellido ? ' ' + prestamoActualizado.persona.segundo_apellido : ''}`
-            
-            // Disparar envío asíncrono para no bloquear la respuesta HTTP
+            const nombreCompleto = [
+                personaDescifrada.primer_nombre,
+                personaDescifrada.segundo_nombre,
+                personaDescifrada.primer_apellido,
+                personaDescifrada.segundo_apellido
+            ].filter(Boolean).join(' ')
+
             enviarConfirmacionDesembolso({
-                email: prestamoActualizado.persona.correo,
+                email: personaDescifrada.correo,
                 nombreCompleto,
                 montoDesembolsado: prestamoActualizado.monto_otorgado,
                 codigoPrestamo: codigo
             }).catch(err => {
                 console.error('[prestamos/desembolsar] Error enviando correo de confirmación:', err)
             })
+        } else {
+            console.warn('[prestamos/desembolsar] ⚠️ No se encontró correo del cliente para enviar notificación')
         }
 
         res.json({
