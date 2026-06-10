@@ -123,9 +123,15 @@ router.post('/simular', verificarToken, async (req, res) => {
     try {
         const { monto, cuotas, fechaPrimerPago, tasas, metodoAmortizacion, diferirCargos } = req.body
 
-        const tienePrincipal = (tasas || []).some(t => t.activa && t.es_interes_principal)
+        // Verificar que haya al menos una tasa activa de interés (principal o periódica)
+        const tienePrincipal = (tasas || []).some(t =>
+            t.activa && (
+                t.es_interes_principal === true ||
+                (t.tipo_calculo && (t.tipo_calculo.includes('periodico') || t.tipo_calculo.includes('porcentaje')))
+            )
+        )
         if (!tienePrincipal) {
-            return res.status(400).json({ error: 'Debe incluir al menos una tasa activa como interés principal.' })
+            return res.status(400).json({ error: 'Debe incluir al menos una tasa de interés activa.' })
         }
 
         // Advertencia de usura (no bloquea — software a medida)
@@ -161,9 +167,15 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
         // data.persona_id, data.tipo_id, data.monto, data.cuotas, data.fechaPrimerPago
         // data.tasasPersonalizadas = [] (viene con los overrides que el admin eligió)
 
-        const tienePrincipal = (data.tasasPersonalizadas || []).some(t => t.activa && t.es_interes_principal)
+        // Verificar que haya al menos una tasa activa de interés (principal o periódica)
+        const tienePrincipal = (data.tasasPersonalizadas || []).some(t =>
+            t.activa && (
+                t.es_interes_principal === true ||
+                (t.tipo_calculo && (t.tipo_calculo.includes('periodico') || t.tipo_calculo.includes('porcentaje')))
+            )
+        )
         if (!tienePrincipal) {
-            return res.status(400).json({ error: 'El préstamo debe tener al menos una tasa activa marcada como interés principal.' })
+            return res.status(400).json({ error: 'El préstamo debe tener al menos una tasa de interés activa.' })
         }
 
         // Advertencia de usura (no bloquea — software a medida)
