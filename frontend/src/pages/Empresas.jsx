@@ -15,6 +15,13 @@ export function Empresas() {
     const [guardando, setGuardando] = useState(false)
     const [empresaImprimir, setEmpresaImprimir] = useState(null)
     const [empleadosImprimir, setEmpleadosImprimir] = useState([])
+    const [modalQuincenaOpen, setModalQuincenaOpen] = useState(false)
+    const [quincenaConfig, setQuincenaConfig] = useState({
+        anio: new Date().getFullYear(),
+        mes: new Date().getMonth(),
+        quincena: new Date().getDate() <= 15 ? 'Q1' : 'Q2'
+    })
+    const [periodoImprimir, setPeriodoImprimir] = useState(null)
     const printRef = useRef()
 
     const handlePrint = useReactToPrint({
@@ -22,10 +29,22 @@ export function Empresas() {
         documentTitle: 'Reporte_Empresa',
     })
 
-    const imprimirEmpleados = async (emp) => {
+    const abrirSelectorQuincena = (emp) => {
+        setEmpresaImprimir(emp)
+        const hoy = new Date()
+        setQuincenaConfig({
+            anio: hoy.getFullYear(),
+            mes: hoy.getMonth(),
+            quincena: hoy.getDate() <= 15 ? 'Q1' : 'Q2'
+        })
+        setModalQuincenaOpen(true)
+    }
+
+    const generarReporteQuincena = async () => {
+        setModalQuincenaOpen(false)
+        setPeriodoImprimir(quincenaConfig)
         try {
-            const res = await api.get('/personas', { params: { empresa_id: emp.id } })
-            setEmpresaImprimir(emp)
+            const res = await api.get('/personas', { params: { empresa_id: empresaImprimir.id } })
             setEmpleadosImprimir(res.data.personas || [])
             setTimeout(() => handlePrint(), 500)
         } catch (e) { console.error(e) }
@@ -117,7 +136,7 @@ export function Empresas() {
                                     {emp.nombre?.[0]?.toUpperCase()}
                                 </div>
                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => imprimirEmpleados(emp)} className="p-1.5 text-[var(--texto-3)] hover:text-[#4FD1C5] hover:bg-[rgba(79,209,197,0.1)] rounded-lg transition-colors" title="Imprimir Empleados">
+                                    <button onClick={() => abrirSelectorQuincena(emp)} className="p-1.5 text-[var(--texto-3)] hover:text-[#4FD1C5] hover:bg-[rgba(79,209,197,0.1)] rounded-lg transition-colors" title="Imprimir Reporte Quincenal">
                                         <Printer size={15} />
                                     </button>
                                     <button onClick={() => abrirModal(emp)} className="p-1.5 text-[var(--texto-3)] hover:text-[#4FD1C5] hover:bg-[rgba(79,209,197,0.1)] rounded-lg transition-colors">
@@ -179,11 +198,74 @@ export function Empresas() {
                 </div>
             )}
 
+            {modalQuincenaOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,16,32,0.8)] backdrop-blur-sm p-4">
+                    <div className="bg-[var(--fondo-base)] border border-[var(--borde)] w-full max-w-sm rounded-3xl p-8 relative shadow-[0_0_50px_rgba(0,0,0,0.6)]">
+                        <button onClick={() => setModalQuincenaOpen(false)} className="absolute top-4 right-4 text-[var(--texto-3)] hover:text-white bg-[rgba(255,255,255,0.05)] p-2 rounded-full">
+                            <X size={18} />
+                        </button>
+                        <h2 className="text-xl font-bold text-white mb-6 flex flex-col">
+                            <span>Reporte de Cobro</span>
+                            <span className="text-sm font-normal text-[var(--cyan)] uppercase tracking-wider mt-1">{empresaImprimir?.nombre}</span>
+                        </h2>
+                        
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-[var(--texto-2)] text-xs font-bold uppercase tracking-wider mb-2">Año</label>
+                                <select 
+                                    value={quincenaConfig.anio} 
+                                    onChange={e => setQuincenaConfig({ ...quincenaConfig, anio: parseInt(e.target.value) })}
+                                    className="w-full bg-[var(--fondo-input)] border border-[var(--borde)] rounded-xl px-4 py-3 text-white focus:border-[#4FD1C5] focus:outline-none"
+                                >
+                                    {[2024, 2025, 2026, 2027, 2028].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-[var(--texto-2)] text-xs font-bold uppercase tracking-wider mb-2">Mes</label>
+                                <select 
+                                    value={quincenaConfig.mes} 
+                                    onChange={e => setQuincenaConfig({ ...quincenaConfig, mes: parseInt(e.target.value) })}
+                                    className="w-full bg-[var(--fondo-input)] border border-[var(--borde)] rounded-xl px-4 py-3 text-white focus:border-[#4FD1C5] focus:outline-none"
+                                >
+                                    {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, idx) => (
+                                        <option key={idx} value={idx}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-[var(--texto-2)] text-xs font-bold uppercase tracking-wider mb-2">Quincena de Nómina</label>
+                                <select 
+                                    value={quincenaConfig.quincena} 
+                                    onChange={e => setQuincenaConfig({ ...quincenaConfig, quincena: e.target.value })}
+                                    className="w-full bg-[var(--fondo-input)] border border-[var(--borde)] rounded-xl px-4 py-3 text-white focus:border-[#4FD1C5] focus:outline-none"
+                                >
+                                    <option value="Q1">Primera Quincena (Días 1 a 15)</option>
+                                    <option value="Q2">Segunda Quincena (Días 16 a Fin de Mes)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button type="button" onClick={() => setModalQuincenaOpen(false)} className="flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-white font-bold transition-all">Cancelar</button>
+                            <button 
+                                onClick={generarReporteQuincena}
+                                className="flex-1 bg-gradient-to-r from-[#4FD1C5] to-[#38B2AC] hover:from-[#38B2AC] hover:to-[#2C7A7B] text-white font-bold py-3 rounded-xl shadow-lg transition-all"
+                            >
+                                GENERAR PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Componente Invisible para PDF - Offscreen para permitir renderizado */}
             <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', opacity: 0, pointerEvents: 'none' }}>
-                <EmpresaEmpleadosPDF ref={printRef} empresa={empresaImprimir} empleados={empleadosImprimir} />
+                <EmpresaEmpleadosPDF ref={printRef} empresa={empresaImprimir} empleados={empleadosImprimir} periodo={periodoImprimir} />
             </div>
         </div>
     )
 }
-

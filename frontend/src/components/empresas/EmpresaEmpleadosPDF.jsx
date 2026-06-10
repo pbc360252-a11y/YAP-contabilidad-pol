@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 import logoYap from '../../assets/logo_yap.png';
 import { formatCOPCorto } from '../../utils/formatCOP';
 
-export const EmpresaEmpleadosPDF = forwardRef(({ empresa, empleados }, ref) => {
+export const EmpresaEmpleadosPDF = forwardRef(({ empresa, empleados, periodo }, ref) => {
     if (!empresa) return null;
 
     const fechaHoy = new Date().toLocaleDateString('es-CO', {
@@ -11,16 +11,51 @@ export const EmpresaEmpleadosPDF = forwardRef(({ empresa, empleados }, ref) => {
         day: '2-digit'
     }).toUpperCase();
 
+    const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+    const periodoStr = periodo 
+        ? `${MESES[periodo.mes]} ${periodo.quincena === 'Q1' ? '01-15' : '16-31'} DE ${periodo.anio}`
+        : null;
+
     // Filtramos los empleados que tienen algún préstamo en curso o procesamos la información de créditos
     const empleadosConDatos = (empleados || []).map(e => {
         const prestamosActivos = e.prestamos || [];
         const montoSolicitado = prestamosActivos.reduce((acc, p) => acc + (p.monto_otorgado || 0), 0);
         
-        // La cuota del período es la suma de las primeras cuotas pendientes de cada préstamo activo
-        const cuotaPeriodo = prestamosActivos.reduce((acc, p) => {
-            const nextCuota = p.cuotas && p.cuotas[0];
-            return acc + (nextCuota ? (nextCuota.cuota_total || 0) : 0);
-        }, 0);
+        let cuotaPeriodo = 0;
+        let tieneCuotaEnPeriodo = false;
+
+        if (periodo) {
+            // Buscamos si el préstamo tiene cuotas programadas en esta quincena
+            cuotaPeriodo = prestamosActivos.reduce((acc, p) => {
+                const cuotaCoincidente = (p.cuotas || []).find(c => {
+                    const fecha = new Date(c.fecha_programada);
+                    const a = fecha.getUTCFullYear();
+                    const m = fecha.getUTCMonth();
+                    const d = fecha.getUTCDate();
+                    
+                    const coincideAnio = a === periodo.anio;
+                    const coincideMes = m === periodo.mes;
+                    const coincideDia = periodo.quincena === 'Q1' 
+                        ? (d >= 1 && d <= 15) 
+                        : (d >= 16 && d <= 31);
+                        
+                    return coincideAnio && coincideMes && coincideDia;
+                });
+                
+                if (cuotaCoincidente) {
+                    tieneCuotaEnPeriodo = true;
+                    return acc + (cuotaCoincidente.cuota_total || 0);
+                }
+                return acc;
+            }, 0);
+        } else {
+            // Fallback original si no hay periodo seleccionado
+            cuotaPeriodo = prestamosActivos.reduce((acc, p) => {
+                const nextCuota = p.cuotas && p.cuotas[0];
+                return acc + (nextCuota ? (nextCuota.cuota_total || 0) : 0);
+            }, 0);
+            tieneCuotaEnPeriodo = prestamosActivos.length > 0;
+        }
 
         const estados = prestamosActivos.map(p => {
             if (p.estado === 'activo') return 'ACTIVO';
@@ -33,14 +68,20 @@ export const EmpresaEmpleadosPDF = forwardRef(({ empresa, empleados }, ref) => {
             montoSolicitado,
             cuotaPeriodo,
             estados,
-            tieneCredito: prestamosActivos.length > 0
+            tieneCredito: prestamosActivos.length > 0,
+            tieneCuotaEnPeriodo
         };
     });
 
+    // Para reporte quincenal, mostrar solo los empleados que tienen cuotas por cobrar en esa quincena
+    const empleadosFiltrados = periodo 
+        ? empleadosConDatos.filter(e => e.cuotaPeriodo > 0)
+        : empleadosConDatos;
+
     // Totales generales para el informe
-    const totalEmpleadosConCredito = empleadosConDatos.filter(e => e.tieneCredito).length;
-    const granTotalMonto = empleadosConDatos.reduce((acc, e) => acc + e.montoSolicitado, 0);
-    const granTotalCuotas = empleadosConDatos.reduce((acc, e) => acc + e.cuotaPeriodo, 0);
+    const totalEmpleadosConCredito = empleadosFiltrados.filter(e => e.tieneCredito).length;
+    const granTotalMonto = empleadosFiltrados.reduce((acc, e) => acc + e.montoSolicitado, 0);
+    const granTotalCuotas = empleadosFiltrados.reduce((acc, e) => acc + e.cuotaPeriodo, 0);
 
     return (
         <div ref={ref} className="p-10 bg-white text-black font-serif text-[12px]" style={{ width: '210mm', minHeight: '297mm', margin: '0 auto' }}>
@@ -51,8 +92,9 @@ export const EmpresaEmpleadosPDF = forwardRef(({ empresa, empleados }, ref) => {
                     <p className="font-bold text-lg mt-1">YAP (CRÉDITOS POR LIBRANZA)</p>
                 </div>
                 <div className="text-right">
-                    <h1 className="font-bold text-xl uppercase">Facturación y Novedades de Libranza</h1>
-                    <p className="text-sm font-bold uppercase text-gray-600">{empresa.nombre}</p>
+                    <h1 className="font-bold text-xl uppercase text-blue-900">Facturación y Novedades de Libranza</h1>
+                    <p className="text-sm font-bold uppercase text-gray-600 italic">{empresa.nombre}</p>
+                    {periodoStr && <p className="text-xs font-black text-emerald-700 mt-1 uppercase">PERÍODO: {periodoStr}</p>}
                     <p className="text-[10px] mt-2">FECHA DE EMISIÓN: {fechaHoy}</p>
                 </div>
             </div>
@@ -75,7 +117,7 @@ export const EmpresaEmpleadosPDF = forwardRef(({ empresa, empleados }, ref) => {
 
             {/* Instrucción de Cobro */}
             <p className="mb-4 text-[10px] text-justify leading-relaxed">
-                Señor Director de Nómina / Talento Humano: Agradecemos realizar el descuento por concepto de libranza a los empleados relacionados a continuación por los valores indicados bajo la casilla <strong>CUOTA A DESCONTAR</strong> correspondientes al presente mes/período de nómina, y transferirlos a la cuenta bancaria autorizada de YAP.
+                Señor Director de Nómina / Talento Humano: Agradecemos realizar el descuento por concepto de libranza a los empleados relacionados a continuación por los valores indicados bajo la casilla <strong>CUOTA A DESCONTAR</strong> correspondientes al período de nómina <strong>{periodoStr || 'del presente mes/período de nómina'}</strong>, y transferirlos a la cuenta bancaria autorizada de YAP.
             </p>
 
             {/* Table */}
@@ -92,8 +134,8 @@ export const EmpresaEmpleadosPDF = forwardRef(({ empresa, empleados }, ref) => {
                     </tr>
                 </thead>
                 <tbody className="uppercase text-[10px]">
-                    {empleadosConDatos && empleadosConDatos.length > 0 ? (
-                        empleadosConDatos.map((e, index) => (
+                    {empleadosFiltrados && empleadosFiltrados.length > 0 ? (
+                        empleadosFiltrados.map((e, index) => (
                             <tr key={e.id} className={e.tieneCredito ? '' : 'text-gray-400'}>
                                 <td className="border border-black p-2 text-center font-mono">{index + 1}</td>
                                 <td className="border border-black p-2 font-mono">{e.cedula}</td>
@@ -107,12 +149,12 @@ export const EmpresaEmpleadosPDF = forwardRef(({ empresa, empleados }, ref) => {
                     ) : (
                         <tr>
                             <td colSpan="7" className="border border-black p-10 text-center font-bold text-gray-400">
-                                No hay empleados registrados para esta empresa
+                                {periodo ? "No hay cuotas programadas para descuento en esta quincena" : "No hay empleados registrados para esta empresa"}
                             </td>
                         </tr>
                     )}
                 </tbody>
-                {empleadosConDatos && empleadosConDatos.length > 0 && (
+                {empleadosFiltrados && empleadosFiltrados.length > 0 && (
                     <tfoot>
                         <tr className="bg-gray-50 font-bold uppercase text-[10px]">
                             <td colSpan="4" className="border border-black p-2 text-right">TOTAL GENERAL FACTURADO:</td>
