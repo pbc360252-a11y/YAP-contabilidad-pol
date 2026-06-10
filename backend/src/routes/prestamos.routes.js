@@ -119,9 +119,14 @@ router.post('/simular', verificarToken, async (req, res) => {
     try {
         const { monto, cuotas, fechaPrimerPago, tasas, metodoAmortizacion, diferirCargos } = req.body
 
+        const tienePrincipal = (tasas || []).some(t => t.activa && t.es_interes_principal)
+        if (!tienePrincipal) {
+            return res.status(400).json({ error: 'Debe incluir al menos una tasa activa como interés principal.' })
+        }
+
         // Validar tasa de usura antes de simular
         if (tasas && tasas.length > 0) {
-            const usuraVal = validarTasaUsura(tasas)
+            const usuraVal = await validarTasaUsura(tasas)
             if (usuraVal.excede) {
                 return res.status(400).json({ error: usuraVal.mensaje })
             }
@@ -152,8 +157,13 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), v
         // data.persona_id, data.tipo_id, data.monto, data.cuotas, data.fechaPrimerPago
         // data.tasasPersonalizadas = [] (viene con los overrides que el admin eligió)
 
+        const tienePrincipal = (data.tasasPersonalizadas || []).some(t => t.activa && t.es_interes_principal)
+        if (!tienePrincipal) {
+            return res.status(400).json({ error: 'El préstamo debe tener al menos una tasa activa marcada como interés principal.' })
+        }
+
         // Validar tasa de usura en el backend antes de procesar
-        const usuraVal = validarTasaUsura(data.tasasPersonalizadas)
+        const usuraVal = await validarTasaUsura(data.tasasPersonalizadas)
         if (usuraVal.excede) {
             return res.status(400).json({ error: usuraVal.mensaje })
         }

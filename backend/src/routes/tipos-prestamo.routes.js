@@ -45,6 +45,19 @@ router.post('/', verificarToken, requiereRol(['superadmin', 'administrador']), a
     try {
         const { nombre, descripcion, cuotas_maximas, monto_minimo, monto_maximo, metodo_amortizacion, diferir_cargos, tasasIds } = req.body
 
+        if (!tasasIds || !Array.isArray(tasasIds) || tasasIds.length === 0) {
+            return res.status(400).json({ error: 'Debe asignar al menos una tasa de interés.' })
+        }
+
+        const tasasEncontradas = await prisma.tasaInteres.findMany({
+            where: { id: { in: tasasIds } }
+        })
+
+        const tienePrincipal = tasasEncontradas.some(t => t.es_interes_principal)
+        if (!tienePrincipal) {
+            return res.status(400).json({ error: 'El tipo de préstamo debe tener al menos una tasa marcada como interés principal.' })
+        }
+
         const nuevoTipo = await prisma.tipoPrestamo.create({
             data: {
                 nombre,
@@ -78,6 +91,16 @@ router.put('/:id', verificarToken, requiereRol(['superadmin', 'administrador']),
         // Si envían tasasIds, actualizamos la relación
         let tasasUpdate = {}
         if (tasasIds) {
+            if (!Array.isArray(tasasIds) || tasasIds.length === 0) {
+                return res.status(400).json({ error: 'Debe asignar al menos una tasa de interés.' })
+            }
+            const tasasEncontradas = await prisma.tasaInteres.findMany({
+                where: { id: { in: tasasIds } }
+            })
+            const tienePrincipal = tasasEncontradas.some(t => t.es_interes_principal)
+            if (!tienePrincipal) {
+                return res.status(400).json({ error: 'El tipo de préstamo debe tener al menos una tasa marcada como interés principal.' })
+            }
             // Eliminar relaciones actuales y recrearlas
             await prisma.tipoPrestamo_Tasa.deleteMany({ where: { tipo_id: id } })
             tasasUpdate = {

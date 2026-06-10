@@ -8912,6 +8912,11 @@ async function main() {
     await prisma.registroPago.create({ data: p })
   }
 
+  // Seeder de configuraciones
+  await prisma.configuracion.create({
+    data: { clave: 'LIMITE_USURA_MENSUAL', valor: '3.5' }
+  })
+
   console.log('✅ Base de datos inicializada con 20 préstamos correctamente (Seed)')
 }
 

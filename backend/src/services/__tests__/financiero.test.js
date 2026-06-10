@@ -21,7 +21,16 @@
  * ============================================================
  */
 
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
+
+vi.mock('../../lib/prisma.js', () => ({
+    prisma: {
+        configuracion: {
+            findUnique: vi.fn(() => ({ valor: '3.5' }))
+        }
+    }
+}))
+
 import {
     redondear2,
     redondear4,
@@ -29,7 +38,8 @@ import {
     obtenerTasaQuincenal,
     calcularCuotaFija,
     calcularPrestamo,
-    validarTasaUsura
+    validarTasaUsura,
+    obtenerSiguienteQuincena
 } from '../financiero.service.js'
 import { calcularMora } from '../mora.service.js'
 
@@ -503,62 +513,62 @@ describe('4. calcularPrestamo - Motor Completo', () => {
 // 5. VALIDAR TASA DE USURA (límite 3.5% mensual)
 // ─────────────────────────────────────────────────────────────────────────────
 describe('5. validarTasaUsura - Límite Regulatorio (~3.5% mensual)', () => {
-    it('tasa 1.8% mensual → NO excede usura (< 3.5%)', () => {
-        const resultado = validarTasaUsura([tasaInteres(1.8)])
+    it('tasa 1.8% mensual → NO excede usura (< 3.5%)', async () => {
+        const resultado = await validarTasaUsura([tasaInteres(1.8)])
         expect(resultado.excede).toBe(false)
     })
 
-    it('tasa 3.5% mensual (exacto límite) → NO excede (no es mayor, es igual)', () => {
-        const resultado = validarTasaUsura([tasaInteres(3.5)])
+    it('tasa 3.5% mensual (exacto límite) → NO excede (no es mayor, es igual)', async () => {
+        const resultado = await validarTasaUsura([tasaInteres(3.5)])
         expect(resultado.excede).toBe(false)
     })
 
-    it('tasa 4% mensual → SÍ excede y el mensaje contiene "Alerta de Usura"', () => {
-        const resultado = validarTasaUsura([tasaInteres(4.0)])
+    it('tasa 4% mensual → SÍ excede y el mensaje contiene "Alerta de Usura"', async () => {
+        const resultado = await validarTasaUsura([tasaInteres(4.0)])
         expect(resultado.excede).toBe(true)
         expect(resultado.mensaje).toContain('Alerta de Usura')
     })
 
-    it('tasa 4% mensual → tasaAcumulada = 4.0 en el resultado', () => {
-        const resultado = validarTasaUsura([tasaInteres(4.0)])
+    it('tasa 4% mensual → tasaAcumulada = 4.0 en el resultado', async () => {
+        const resultado = await validarTasaUsura([tasaInteres(4.0)])
         expect(resultado.excede).toBe(true)
         expect(resultado.tasaAcumulada).toBe(4.0)
     })
 
-    it('dos tasas cuya suma supera 3.5%/mensual → excede', () => {
+    it('dos tasas cuya suma supera 3.5%/mensual → excede', async () => {
         // 2.0% mensual (1.0 Q) + 1.5% mensual (0.75 Q) + 0.5% mensual (0.25 Q) = 4.0% mensual
         const tasas = [
             tasaInteres(2.0),
             tasaInteres(1.5),
             tasaInteres(0.5)
         ]
-        const resultado = validarTasaUsura(tasas)
+        const resultado = await validarTasaUsura(tasas)
         expect(resultado.excede).toBe(true)
     })
 
-    it('cargo único NO cuenta para el límite de usura (es_cargo_unico=true)', () => {
+    it('cargo único NO cuenta para el límite de usura (es_cargo_unico=true)', async () => {
         // 1.8% mensual + 5% cargo único → solo cuentan los periódicos
         const tasas = [tasaInteres(1.8), cargoUnico(5.0)]
-        const resultado = validarTasaUsura(tasas)
+        const resultado = await validarTasaUsura(tasas)
         expect(resultado.excede).toBe(false)
     })
 
-    it('tasa inactiva (activa=false) NO cuenta para usura', () => {
+    it('tasa inactiva (activa=false) NO cuenta para usura', async () => {
         const tasaInactiva = { ...tasaInteres(4.0), activa: false }
-        const resultado = validarTasaUsura([tasaInactiva])
+        const resultado = await validarTasaUsura([tasaInactiva])
         expect(resultado.excede).toBe(false)
     })
 
-    it('array vacío → no excede', () => {
-        expect(validarTasaUsura([])).toMatchObject({ excede: false })
+    it('array vacío → no excede', async () => {
+        expect(await validarTasaUsura([])).toMatchObject({ excede: false })
     })
 
-    it('argumento null → retorna {excede: false} sin crash', () => {
-        expect(validarTasaUsura(null)).toMatchObject({ excede: false })
+    it('argumento null → retorna {excede: false} sin crash', async () => {
+        expect(await validarTasaUsura(null)).toMatchObject({ excede: false })
     })
 
-    it('argumento undefined → retorna {excede: false} sin crash', () => {
-        expect(validarTasaUsura(undefined)).toMatchObject({ excede: false })
+    it('argumento undefined → retorna {excede: false} sin crash', async () => {
+        expect(await validarTasaUsura(undefined)).toMatchObject({ excede: false })
     })
 })
 
@@ -764,6 +774,60 @@ describe('6. calcularMora - Intereses por Atraso', () => {
             expect(resultado.totalCargosUnicos).toBe(50000)
             expect(resultado.tablaCuotas[0].cargosUnicos).toBe(50000)
             expect(resultado.tablaCuotas[1].cargosUnicos).toBe(0)
+        })
+    })
+
+    describe('4g) Lógica de Quincena Calendario Real', () => {
+        it('debe calcular correctamente la siguiente quincena desde el día 15 (va al fin de mes)', () => {
+            const fecha = new Date('2026-01-15T12:00:00.000Z')
+            const siguiente = obtenerSiguienteQuincena(fecha)
+            expect(siguiente.getUTCMonth()).toBe(0) // Enero (0-indexed)
+            expect(siguiente.getUTCDate()).toBe(31)
+            expect(siguiente.getUTCHours()).toBe(12)
+        })
+
+        it('debe calcular correctamente la siguiente quincena desde fin de mes (va al 15 del mes siguiente)', () => {
+            const fecha = new Date('2026-01-31T12:00:00.000Z')
+            const siguiente = obtenerSiguienteQuincena(fecha)
+            expect(siguiente.getUTCMonth()).toBe(1) // Febrero (0-indexed)
+            expect(siguiente.getUTCDate()).toBe(15)
+            expect(siguiente.getUTCHours()).toBe(12)
+        })
+
+        it('debe calcular correctamente fin de mes en año bisiesto (Feb 29)', () => {
+            const fecha = new Date('2024-02-15T10:00:00.000Z')
+            const siguiente = obtenerSiguienteQuincena(fecha)
+            expect(siguiente.getUTCMonth()).toBe(1) // Febrero
+            expect(siguiente.getUTCDate()).toBe(29)
+        })
+
+        it('debe calcular correctamente fin de mes en año no bisiesto (Feb 28)', () => {
+            const fecha = new Date('2025-02-15T10:00:00.000Z')
+            const siguiente = obtenerSiguienteQuincena(fecha)
+            expect(siguiente.getUTCMonth()).toBe(1) // Febrero
+            expect(siguiente.getUTCDate()).toBe(28)
+        })
+
+        it('debe alinear las cuotas del préstamo a las quincenas calendario reales', () => {
+            const capital = 1000000
+            const tasas = [tasaInteres(2.0)]
+            const resultado = calcularPrestamo({
+                montoOtorgado: capital,
+                numeroCuotas: 4,
+                fechaPrimerPago: '2026-01-15T12:00:00.000Z',
+                tasasAsignadas: tasas,
+                metodoAmortizacion: 'lineal'
+            })
+
+            // Las cuotas deben tener las fechas:
+            // Cuota 1: 2026-01-15
+            // Cuota 2: 2026-01-31
+            // Cuota 3: 2026-02-15
+            // Cuota 4: 2026-02-28
+            expect(new Date(resultado.tablaCuotas[0].fechaPago).getUTCDate()).toBe(15)
+            expect(new Date(resultado.tablaCuotas[1].fechaPago).getUTCDate()).toBe(31)
+            expect(new Date(resultado.tablaCuotas[2].fechaPago).getUTCDate()).toBe(15)
+            expect(new Date(resultado.tablaCuotas[3].fechaPago).getUTCDate()).toBe(28)
         })
     })
 

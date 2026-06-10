@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js'
+import { prisma } from '../lib/prisma.js'
 
 // Configuramos Decimal.js para tener suficiente precisión y truncamiento adecuado.
 // Usamos rounding MODE_HALF_UP típicamente usado en finanzas
@@ -7,6 +8,23 @@ Decimal.set({ precision: 20, rounding: 4 })
 export const redondear2 = (n) => new Decimal(n).toDecimalPlaces(2).toNumber()
 export const redondear4 = (n) => new Decimal(n).toDecimalPlaces(4).toNumber()
 export const redondear6 = (n) => new Decimal(n).toDecimalPlaces(6).toNumber()
+
+export function obtenerSiguienteQuincena(fecha) {
+    const nuevaFecha = new Date(fecha.getTime())
+    const dia = nuevaFecha.getDate()
+    
+    if (dia <= 15) {
+        // Ir al último día del mismo mes.
+        nuevaFecha.setDate(1)
+        nuevaFecha.setMonth(nuevaFecha.getMonth() + 1)
+        nuevaFecha.setDate(0)
+    } else {
+        // Ir al día 15 del siguiente mes.
+        nuevaFecha.setDate(15)
+        nuevaFecha.setMonth(nuevaFecha.getMonth() + 1)
+    }
+    return nuevaFecha
+}
 
 export function obtenerTasaQuincenal(tasa) {
     const tipo = tasa.tipo_calculo_snapshot ?? tasa.tipo_calculo
@@ -88,9 +106,11 @@ export function calcularPrestamo({ montoOtorgado, numeroCuotas, tasasAsignadas, 
     let saldoInicial = new Decimal(mOtorgado)
     const tablaCuotas = []
 
+    let fechaCuota = new Date(fechaPrimerPago)
     for (let i = 1; i <= nCuotas; i++) {
-        const fechaCuota = new Date(fechaPrimerPago)
-        fechaCuota.setDate(fechaCuota.getDate() + (i - 1) * 15)
+        if (i > 1) {
+            fechaCuota = obtenerSiguienteQuincena(fechaCuota)
+        }
 
         // Si usamos Cuota Fija, el capital es: cuotaFijaBase - interesPuro
         let interesPuroParaAmortizar = new Decimal(0)
@@ -291,7 +311,7 @@ export function calcularPrestamo({ montoOtorgado, numeroCuotas, tasasAsignadas, 
  * @param {Array} tasasAsignadas - Array de tasas asignadas
  * @returns {Object} - Resultado de la validación
  */
-export function validarTasaUsura(tasasAsignadas) {
+export async function validarTasaUsura(tasasAsignadas) {
     if (!Array.isArray(tasasAsignadas)) return { excede: false }
 
     const tasasPeriodicas = tasasAsignadas.filter(t => t.activa && !t.es_cargo_unico && !t.es_tasa_mora)
@@ -304,7 +324,22 @@ export function validarTasaUsura(tasasAsignadas) {
         }
     }
     
-    const LIMITE_USURA_MENSUAL = new Decimal(3.5)
+    let limiteUsuraVal = 3.5
+    try {
+        const configRecord = await prisma.configuracion.findUnique({
+            where: { clave: 'LIMITE_USURA_MENSUAL' }
+        })
+        if (configRecord && configRecord.valor) {
+            const parsed = parseFloat(configRecord.valor)
+            if (!isNaN(parsed)) {
+                limiteUsuraVal = parsed
+            }
+        }
+    } catch (error) {
+        console.error('[validarTasaUsura] Error al obtener LIMITE_USURA_MENSUAL de la base de datos:', error)
+    }
+
+    const LIMITE_USURA_MENSUAL = new Decimal(limiteUsuraVal)
     
     if (tasaMensualTotal.greaterThan(LIMITE_USURA_MENSUAL)) {
         return {
