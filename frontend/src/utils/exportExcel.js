@@ -1,4 +1,5 @@
-import XLSX from 'xlsx-js-style';
+import * as XLSXModule from 'xlsx-js-style';
+const XLSX = XLSXModule.default || XLSXModule;
 
 /**
  * Genera y descarga un archivo Excel (.xlsx) premium con estilos visuales completos.
