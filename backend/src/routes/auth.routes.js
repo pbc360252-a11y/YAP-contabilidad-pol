@@ -58,7 +58,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
             httpOnly: true,                    // No accesible desde JavaScript
             secure: isProd,                    // Solo HTTPS en producción
             sameSite: isProd ? 'Strict' : 'Lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 días en ms
+            maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000, // Sincronizado con BD (30 días)
             path: '/api/auth'                  // Limitar alcance de la cookie
         })
 

@@ -90,8 +90,13 @@ app.use(cookieParser()) // Necesario para leer req.cookies en auth (httpOnly ref
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 // Rutas base
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', info: 'YAP (CRÉDITOS POR LIBRANZA) API' })
+app.get('/api/health', async (req, res) => {
+    try {
+        await prisma.$queryRaw`SELECT 1`
+        res.json({ status: 'ok', info: 'YAP (CRÉDITOS POR LIBRANZA) API', db: 'connected' })
+    } catch (error) {
+        res.status(503).json({ status: 'error', db: 'disconnected' })
+    }
 })
 
 // ── Rate Limiter para rutas públicas (sin auth) ───────────────────────────
