@@ -90,7 +90,11 @@ router.get('/:id', verificarToken, async (req, res) => {
         const prestamo = await prisma.prestamo.findUnique({
             where: { id: req.params.id },
             include: {
-                persona: true,
+                persona: {
+                    include: {
+                        empresa: true
+                    }
+                },
                 tipo: true,
                 tasas_aplicadas: { orderBy: { orden: 'asc' } },
                 cuotas: { orderBy: { numero_cuota: 'asc' } },
@@ -450,7 +454,13 @@ router.put('/:id/desembolsar', verificarToken, requiereRol(['superadmin', 'admin
                 desembolsado: true,
                 fecha_desembolso: new Date()
             },
-            include: { persona: true }
+            include: {
+                persona: {
+                    include: {
+                        empresa: true
+                    }
+                }
+            }
         })
 
         // 3. Registrar acción en auditoría
