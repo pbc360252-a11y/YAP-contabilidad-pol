@@ -109,7 +109,7 @@ export const AmortizacionPDF = forwardRef(({ prestamo }, ref) => {
                 <div className="grid grid-cols-6 divide-x divide-black border-b border-black text-center text-[9px] font-bold bg-white uppercase">
                     <div className="p-1.5 text-blue-900">{formatCurrency(prestamo.monto_otorgado)}</div>
                     <div className="p-1.5">{prestamo.numero_cuotas}</div>
-                    <div className="p-1.5">CUOTA FIJA</div>
+                    <div className="p-1.5">{prestamo.metodo_amortizacion === 'frances' ? 'CUOTA FIJA' : 'CAPITAL CONSTANTE'}</div>
                     <div className="p-1.5">QUINCENAL</div>
                     <div className="p-1.5">COBRO ASISTIDO</div>
                     <div className="p-1.5">{tasaEA}%</div>

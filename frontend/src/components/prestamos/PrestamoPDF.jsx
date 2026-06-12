@@ -68,7 +68,13 @@ export const PrestamoPDF = forwardRef(({ prestamo }, ref) => {
                 {/* Table Header */}
                 <div className="grid grid-cols-[0.8fr_1.5fr_2fr] border-b-[2px] border-black divide-x-[1.5px] divide-black bg-gray-100 uppercase font-extrabold text-[10px] text-center">
                     <div className="p-1 flex flex-col justify-center">Nº DE<br />CUOTAS</div>
-                    <div className="p-1 flex flex-col justify-center">VALOR CUOTA FIJA<br />QUINCENAL</div>
+                    <div className="p-1 flex flex-col justify-center">
+                        {prestamo.metodo_amortizacion === 'frances' ? (
+                            <>VALOR CUOTA FIJA<br />QUINCENAL</>
+                        ) : (
+                            <>VALOR CUOTA<br />QUINCENAL</>
+                        )}
+                    </div>
                     <div className="p-1 flex items-center justify-center">FECHA DE PAGO</div>
                 </div>
 

@@ -98,7 +98,7 @@ router.get('/:id', verificarToken, async (req, res) => {
             }
         })
         if (!prestamo) return res.status(404).json({ error: 'Préstamo no encontrado' })
-        res.json({ prestamo: addCodigo(prestamo) })
+        res.json({ prestamo: addCodigo({ ...prestamo, persona: descifrarPersona(prestamo.persona) }) })
     } catch (error) {
         res.status(500).json({ error: 'Error interno' })
     }
@@ -493,7 +493,7 @@ router.put('/:id/desembolsar', verificarToken, requiereRol(['superadmin', 'admin
 
         res.json({
             mensaje: 'Préstamo desembolsado correctamente',
-            prestamo: addCodigo(prestamoActualizado)
+            prestamo: addCodigo({ ...prestamoActualizado, persona: descifrarPersona(prestamoActualizado.persona) })
         })
     } catch (error) {
         console.error('[prestamos/desembolsar] Error al desembolsar:', error)
